@@ -37,6 +37,15 @@
   footer { margin-top:24px; color:var(--muted); font-size:13px; text-align:center; }
   footer a { color:var(--green); }
   #loginArea { position:relative; }
+  nav { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  nav a, nav button { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:999px; padding:8px 14px; font-size:14px; cursor:pointer; text-decoration:none; }
+  nav a.active, nav button.active { border-color:var(--green); color:var(--green); }
+  nav .soon { font-size:11px; color:var(--amber); margin-left:4px; }
+  .hero { text-align:center; padding:28px 18px; }
+  .hero h2 { font-size:26px; margin:0 0 6px; }
+  .hero h2 span { color:var(--green); }
+  .hero p { color:var(--muted); margin:0 0 16px; }
+  #soonNote { background:#1a1405; border:1px solid var(--amber); border-radius:12px; padding:12px 16px; margin-top:16px; font-size:14px; }
   #userChip { display:flex; align-items:center; gap:10px; cursor:pointer; background:var(--card); border:1px solid var(--border); border-radius:999px; padding:6px 14px 6px 6px; }
   .avatar { width:36px; height:36px; border-radius:50%; background:var(--green); color:#04140a; font-weight:800; font-size:18px; display:flex; align-items:center; justify-content:center; flex:none; }
   #panel { position:absolute; right:0; top:52px; width:290px; max-width:calc(100vw - 32px); background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; z-index:10; box-shadow:0 12px 32px rgba(0,0,0,.5); }
@@ -71,6 +80,24 @@
     </div>
   </header>
 
+  <nav>
+    <a href="/" class="active">🏠 Home</a>
+    <button onclick="soonPage('mykey')">🔑 My Key <span class="soon">မကြာခင်</span></button>
+    <button onclick="soonPage('create')">✨ Create Key <span class="soon">မကြာခင်</span></button>
+    <button onclick="soonPage('account')">👤 Account <span class="soon">မကြာခင်</span></button>
+  </nav>
+
+  <div id="soonNote" style="display:none"></div>
+
+  <div class="card hero">
+    <h2>Outline VPN Key — <span>မြန်မြန်၊ လွယ်လွယ်၊ စိတ်ချရတယ်</span></h2>
+    <p>အခမဲ့ trial 5 GB / ၁၀ ရက် ယူပါ · Plan ဝယ်ပြီး key တန်းရမယ် · Telegram bot နဲ့ ချိတ်ထားတယ်</p>
+    <div class="btnrow" style="justify-content:center">
+      <button class="btn" onclick="gotoTrial()">အခမဲ့ Trial ယူမယ်</button>
+      <button class="btn secondary" onclick="gatedBuy()">Key ဝယ်မယ်</button>
+    </div>
+  </div>
+
   <div class="card" id="loginCard" style="display:none">
     <h2>🌐 Telegram Bot နဲ့ Login ဝင်မယ်</h2>
     <p>Password မလိုပါ — bot က code ပေးမယ်၊ အဲ့ code ကို ဒီမှာ ရိုက်ထည့်ရုံပဲ။</p>
@@ -85,7 +112,7 @@
     <div id="loginMsg" class="muted" style="margin-top:10px"></div>
   </div>
 
-  <div class="card">
+  <div class="card" id="trialCard">
     <h2>အခမဲ့ Trial ယူပါ</h2>
     <p><span class="ok">5 GB</span> · <span class="ok">၁၀ ရက်</span> · တစ်ယောက်ကို cooldown <span class="ok">၁ ရက်</span>။ Trial ယူဖို့ အရင် login ဝင်ရမယ် — login ဝင်ထားရင် trial က မင်း Telegram နဲ့ ချိတ်မယ် (bot နဲ့ cooldown တစ်ထပ်တည်း)။</p>
     <div id="trialServerWrap" style="display:none">
@@ -105,6 +132,15 @@
     <p class="muted">ဈေးနှုန်းတွေက live ဖြစ်တယ်။ ဝယ်ယူမှုနဲ့ ငွေပေးချေမှုက Telegram bot မှာပဲ လုပ်ပါတယ် — ဝယ်ဖို့ အရင် login ဝင်ရမယ်။</p>
     <div id="plans" class="plans"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
     <div id="plansErr" class="err small" style="display:none"></div>
+  </div>
+
+  <div class="card" id="keysPreview" style="display:none">
+    <h2>🔑 ကျွန်တော့် Key တွေ</h2>
+    <div id="keysPreviewBody"></div>
+    <div class="btnrow">
+      <button class="btn secondary" onclick="gotoSection('keysBlock')">အကုန်ကြည့်မယ်</button>
+    </div>
+    <p class="muted small">My Key page သီးသန့် မကြာခင် ရမယ် — အခုတော့ အကုန်ကြည့်မယ် ကို နှိပ်ရင် အောက်က စာရင်းအပြည့်ကို ပြမယ်။</p>
   </div>
 
   <div class="card" id="accountCard" style="display:none">
@@ -195,6 +231,37 @@ function renderHeader() {
   }
 }
 function openBot() { window.open("https://t.me/KeyShopMmBot", "_blank", "noopener"); }
+function soonPage(page) {
+  var note = document.getElementById("soonNote");
+  var texts = {
+    mykey: "⏳ My Key page သီးသန့် မကြာခင် ရမယ် — အခုတော့ login ဝင်ပြီးရင် ဒီ home page မှာ ကျွန်တော့် Key တွေ ကြည့်လို့ရတယ်။",
+    create: "⏳ Create Key page မကြာခင် ရမယ် — အခုတော့ အောက်က Plan တွေကနေ Bot မှာ ဝယ်လို့ရတယ်။",
+    account: "⏳ Account page သီးသန့် မကြာခင် ရမယ် — အခုတော့ login ဝင်ပြီးရင် အောက်က My Account မှာ ကြည့်လို့ရတယ်။"
+  };
+  note.innerHTML = (texts[page] || "") + ' <button class="btn secondary small" style="padding:4px 10px;margin-left:8px" onclick="document.getElementById(\'soonNote\').style.display=\'none\'">ပိတ်မယ်</button>';
+  note.style.display = "block";
+  note.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+function gotoTrial() {
+  document.getElementById("trialCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function renderKeysPreview(me) {
+  var card = document.getElementById("keysPreview");
+  var body = document.getElementById("keysPreviewBody");
+  var keys = (me.keys || []).slice().reverse().slice(0, 3);
+  if (!keys.length) {
+    card.style.display = "none";
+    return;
+  }
+  body.innerHTML = keys.map(function (k) {
+    var title = esc(k.label || k.planKey || k.kind || "Key");
+    var srv = esc(k.serverName || "");
+    var exp = k.expiresAt ? fmtDate(k.expiresAt) : "";
+    return '<div class="keyitem"><b>' + title + "</b>" + (srv ? " · " + srv : "") +
+      (exp ? '<div class="muted small">သက်တမ်း ' + exp + " အထိ</div>" : "") + "</div>";
+  }).join("");
+  card.style.display = "block";
+}
 function gotoSection(id) {
   document.getElementById("accountCard").style.display = "block";
   var el = document.getElementById(id);
@@ -204,6 +271,7 @@ function logout() {
   session = null; meData = null;
   try { localStorage.removeItem("ksh_session"); } catch (e) {}
   document.getElementById("accountCard").style.display = "none";
+  document.getElementById("keysPreview").style.display = "none";
   renderHeader();
 }
 async function submitCode() {
@@ -287,6 +355,7 @@ function renderAccount(me) {
       return '<div class="txrow"><span>' + esc(reasonLabel(t.reason)) + ' <span class="muted">' + fmtDate(t.ts) + "</span></span><span class=\"" + cls + "\">" + sign + d + " pts</span></div>";
     }).join("");
   }
+  renderKeysPreview(me);
   renderHeader();
 }
 async function loadMe() {
