@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KeyShop — VPN Key ဆိုင်</title>
+<meta name="description" content="KeyShop — Outline VPN key တွေ အခမဲ့ trial ယူပါ၊ plan တွေဝယ်ပါ။ Telegram bot နဲ့လည်း ချိတ်ဆက်ထားပါတယ်။">
+<style>
+  :root { --bg:#050807; --card:#0c120c; --border:#1e2b1e; --green:#00ff66; --text:#e8f5e9; --muted:#9db8a2; --red:#ff5252; --amber:#ffb300; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Myanmar",sans-serif; line-height:1.6; }
+  .wrap { max-width:720px; margin:0 auto; padding:20px 16px 48px; }
+  header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  h1 { margin:0; font-size:30px; }
+  h1 span { color:var(--green); }
+  .tag { color:var(--muted); margin:4px 0 0; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:18px; margin-top:16px; }
+  h2 { margin:0 0 8px; font-size:20px; }
+  p { margin:8px 0; }
+  .muted { color:var(--muted); font-size:14px; }
+  .btn { display:inline-block; background:var(--green); color:#04140a; border:0; border-radius:10px; padding:12px 20px; font-size:16px; font-weight:700; cursor:pointer; text-decoration:none; text-align:center; }
+  .btn.secondary { background:transparent; color:var(--green); border:1px solid var(--green); }
+  .btn:disabled { opacity:.5; cursor:wait; }
+  .btnrow { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .plans { display:grid; gap:12px; margin-top:12px; }
+  .plan { border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .plan h3 { margin:0; }
+  .price { font-size:24px; font-weight:800; color:var(--green); margin:6px 0 0; }
+  .plan .meta { color:var(--muted); font-size:14px; }
+  select, input[type=text] { width:100%; background:#07100a; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:11px 12px; font-size:15px; margin-top:8px; }
+  .result { word-break:break-all; }
+  .ok { color:var(--green); }
+  .err { color:var(--red); }
+  .warn { color:var(--amber); }
+  #userChip { display:flex; align-items:center; gap:10px; }
+  #userChip img { width:40px; height:40px; border-radius:50%; }
+  .small { font-size:13px; }
+  code { background:#07100a; padding:2px 6px; border-radius:6px; word-break:break-all; }
+  footer { margin-top:24px; color:var(--muted); font-size:13px; text-align:center; }
+  footer a { color:var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🔑 <span>KeyShop</span></h1>
+      <p class="tag">Outline VPN key ဆိုင် — မြန်မြန်၊ လွယ်လွယ်၊ စိတ်ချရတယ်။</p>
+    </div>
+    <div id="loginArea">
+      <div id="widgetBox">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+          data-telegram-login="KeyShopMmBot" data-size="large"
+          data-onauth="onTelegramAuth" data-request-access="write"></script>
+      </div>
+      <div id="userChip" style="display:none"></div>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>အခမဲ့ Trial ယူပါ</h2>
+    <p><span class="ok">5 GB</span> · <span class="ok">၁၀ ရက်</span> · တစ်ယောက်ကို cooldown <span class="ok">၁ ရက်</span>။ Login ဝင်ထားရင် trial က မင်း Telegram နဲ့ ချိတ်မယ် (bot နဲ့ cooldown တစ်ထပ်တည်း)။</p>
+    <div id="trialServerWrap" style="display:none">
+      <label for="trialServer">Server ရွေးပါ</label>
+      <select id="trialServer"></select>
+    </div>
+    <div class="btnrow">
+      <button class="btn" id="trialBtn" onclick="claimTrial()">အခမဲ့ Trial ယူမယ်</button>
+      <a class="btn secondary" href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">Telegram Bot မှာ ဝယ်မယ်</a>
+    </div>
+    <div id="trialMsg" class="muted" style="margin-top:10px"></div>
+    <div id="trialResult" class="result" style="display:none; margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <h2>Plan တွေ</h2>
+    <p class="muted">ဈေးနှုန်းတွေက live ဖြစ်တယ်။ ဝယ်ယူမှုနဲ့ ငွေပေးချေမှုက Telegram bot မှာပဲ လုပ်ပါတယ်။</p>
+    <div id="plans" class="plans"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
+    <div id="plansErr" class="err small" style="display:none"></div>
+  </div>
+
+  <div class="card">
+    <h2>ဘယ်လိုသုံးရမလဲ</h2>
+    <p>၁ · အပေါ်က Trial ယူမယ် ကို နှိပ်ပါ — key link တစ်ခု ရမယ်။<br>
+       ၂ · Outline app ကို ဖုန်းထဲ သွင်းပါ (<a href="https://getoutline.org" target="_blank" rel="noopener" style="color:var(--green)">getoutline.org</a>)။<br>
+       ၃ · Outline app ထဲမှာ key link ကို ထည့်ပြီး Connect နှိပ်ရုံပဲ။</p>
+    <p class="muted">Key သက်တမ်းကုန်ရင် ဒီ site (သို့) Telegram bot မှာ အသစ်ပြန်ယူလို့ရတယ်။ အကူအညီလိုရင် <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener" style="color:var(--green)">@KeyShopMmBot</a> ကို ဆက်သွယ်ပါ။</p>
+  </div>
+
+  <footer>
+    KeyShop · Telegram bot <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">@KeyShopMmBot</a>
+  </footer>
+</div>
+
+<script>
+var API = "https://api.ksh-info.tech";
+var session = null;
+try {
+  var saved = JSON.parse(localStorage.getItem("ksh_session") || "null");
+  if (saved && saved.expiresAt && new Date(saved.expiresAt).getTime() > Date.now()) session = saved;
+  else localStorage.removeItem("ksh_session");
+} catch (e) { session = null; }
+
+function fmtKyat(n) { return n.toLocaleString("en-US") + " ကျပ်"; }
+function fmtDate(iso) {
+  try { return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
+  catch (e) { return iso; }
+}
+function showUser() {
+  var chip = document.getElementById("userChip");
+  var box = document.getElementById("widgetBox");
+  if (session && session.user) {
+    box.style.display = "none";
+    var u = session.user;
+    var img = u.photo_url ? '<img src="' + u.photo_url.replace(/"/g, "") + '" alt="">' : "";
+    chip.innerHTML = img + "<div><b>" + (u.first_name || "Telegram User") + "</b>" +
+      (u.username ? '<div class="muted small">@' + u.username + "</div>" : "") +
+      '<div><button class="btn secondary small" style="padding:6px 12px;margin-top:6px" onclick="logout()">Logout</button></div></div>';
+    chip.style.display = "flex";
+  } else {
+    chip.style.display = "none";
+    box.style.display = "block";
+  }
+}
+function logout() { session = null; try { localStorage.removeItem("ksh_session"); } catch (e) {} showUser(); }
+async function onTelegramAuth(user) {
+  var msg = document.getElementById("trialMsg");
+  try {
+    var res = await fetch(API + "/api/auth/telegram", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(user)
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || "login မအောင်မြင်ပါ");
+    session = { token: data.session, expiresAt: data.expiresAt, user: data.user };
+    try { localStorage.setItem("ksh_session", JSON.stringify(session)); } catch (e) {}
+    showUser();
+  } catch (e) {
+    msg.innerHTML = '<span class="err">Login မအောင်မြင်ပါ — ပြန်နှိပ်ကြည့်ပါ။ (' + e.message + ")</span>";
+  }
+}
+async function loadPlans() {
+  var box = document.getElementById("plans");
+  var errBox = document.getElementById("plansErr");
+  try {
+    var res = await fetch(API + "/api/plans");
+    var data = await res.json();
+    if (!res.ok || !data.ok) throw new Error("plans ဆွဲမရပါ");
+    var html = "";
+    data.plans.forEach(function (p) {
+      html += '<div class="plan"><h3>' + p.name + '</h3><div class="price">' + fmtKyat(p.costKyat) + '</div>' +
+        '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက်</div>" +
+        '<div class="btnrow"><a class="btn secondary" href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">Bot မှာ ဝယ်မယ်</a></div></div>';
+    });
+    box.innerHTML = html;
+    var sel = document.getElementById("trialServer");
+    var wrap = document.getElementById("trialServerWrap");
+    if (data.servers && data.servers.length > 1) {
+      sel.innerHTML = data.servers.map(function (s) { return '<option value="' + s.id + '">' + s.name + "</option>"; }).join("");
+      wrap.style.display = "block";
+    } else if (data.servers && data.servers.length === 1) {
+      sel.innerHTML = '<option value="' + data.servers[0].id + '">' + data.servers[0].name + "</option>";
+      wrap.style.display = "none";
+    } else {
+      document.getElementById("trialBtn").disabled = true;
+      document.getElementById("trialMsg").innerHTML = '<span class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</span>';
+    }
+  } catch (e) {
+    box.innerHTML = "";
+    errBox.style.display = "block";
+    errBox.textContent = "Plan တွေ ဆွဲမရပါ — အင်တာနက်စစ်ပြီး ပြန်ဖွင့်ကြည့်ပါ။";
+  }
+}
+async function claimTrial() {
+  var btn = document.getElementById("trialBtn");
+  var msg = document.getElementById("trialMsg");
+  var out = document.getElementById("trialResult");
+  btn.disabled = true; msg.textContent = "Trial လုပ်နေတယ်…"; out.style.display = "none";
+  try {
+    var headers = { "Content-Type": "application/json" };
+    if (session && session.token) headers["Authorization"] = "Bearer " + session.token;
+    var body = {};
+    var sel = document.getElementById("trialServer");
+    if (sel && sel.value) body.server = sel.value;
+    var res = await fetch(API + "/api/trial", { method: "POST", headers: headers, body: JSON.stringify(body) });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      if (res.status === 429 && data.nextEligibleAt) {
+        msg.innerHTML = '<span class="warn">Cooldown ရှိနေတယ် — ' + fmtDate(data.nextEligibleAt) + " နောက်မှ ပြန်ယူလို့ရမယ်။</span>";
+      } else if (res.status === 401) {
+        logout();
+        msg.innerHTML = '<span class="err">Session ကုန်သွားပြီ — Telegram နဲ့ ပြန် login ဝင်ပြီးမှ ထပ်ယူပါ။</span>';
+      } else {
+        msg.innerHTML = '<span class="err">' + (data.error || "Trial ယူမရပါ") + "</span>";
+      }
+      return;
+    }
+    msg.innerHTML = '<span class="ok">Trial ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
+    out.style.display = "block";
+    out.innerHTML = "<p><b>Key:</b><br><code id=\"keyUrl\"></code></p>" +
+      '<div class="btnrow"><button class="btn" onclick="copyKey()">Key ကို Copy ကူးမယ်</button></div>' +
+      '<p class="muted">ပမာဏ ' + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · Server: " + data.server.name + "</p>";
+    document.getElementById("keyUrl").textContent = data.accessUrl;
+    out.dataset.key = data.accessUrl;
+  } catch (e) {
+    msg.innerHTML = '<span class="err">ချိတ်ဆက်မရပါ — အင်တာနက်စစ်ပြီး ပြန်နှိပ်ပါ။</span>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+function copyKey() {
+  var out = document.getElementById("trialResult");
+  var key = out.dataset.key || "";
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(key).then(function () {
+      document.getElementById("trialMsg").innerHTML = '<span class="ok">Copy ကူးပြီးပြီ!</span>';
+    });
+  } else {
+    var ta = document.createElement("textarea");
+    ta.value = key; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    document.getElementById("trialMsg").innerHTML = '<span class="ok">Copy ကူးပြီးပြီ!</span>';
+  }
+}
+showUser();
+loadPlans();
+</script>
+</body>
+</html>
