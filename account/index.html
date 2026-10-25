@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account — KeyShop</title>
+<meta name="description" content="KeyShop account: profile, လက်ကျန်, wallet history, ငွေသွင်း။">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🔑 <span>KeyShop</span></h1>
+      <p class="tag">Outline VPN key ဆိုင် — မြန်မြန်၊ လွယ်လွယ်၊ စိတ်ချရတယ်။</p>
+    </div>
+    <div id="loginArea">
+      <div id="loginBtnWrap">
+        <button class="btn secondary" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+      </div>
+      <div id="userChip" style="display:none" onclick="togglePanel()"></div>
+      <div id="panel" style="display:none"></div>
+    </div>
+  </header>
+
+  <nav>
+    <a href="../">🏠 Home</a>
+    <a href="../mykey/">🔑 My Key</a>
+    <a href="../create_vpn_key/">✨ Create Key</a>
+    <a href="./" class="active">👤 Account</a>
+  </nav>
+
+  <div class="card" id="loginCard" style="display:none">
+    <h2>🌐 Telegram Bot နဲ့ Login ဝင်မယ်</h2>
+    <p>Password မလိုပါ — bot က code ပေးမယ်၊ အဲ့ code ကို ဒီမှာ ရိုက်ထည့်ရုံပဲ။</p>
+    <p>၁ · Telegram မှာ <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener" style="color:var(--green)">@KeyShopMmBot</a> ကို ဖွင့်ပါ။<br>
+       ၂ · Bot ထဲမှာ <code>/link</code> ပို့ပါ — 6-digit code တစ်ခု ရမယ်။<br>
+       ၃ · အဲ့ code ကို အောက်မှာ ရိုက်ထည့်ပြီး ချိတ်ဆက်မယ် ကို နှိပ်ပါ။ Code က ၁၀ မိနစ်ပဲ သက်တမ်းရှိတယ်။</p>
+    <input type="text" id="codeInput" inputmode="numeric" maxlength="6" placeholder="______" autocomplete="one-time-code">
+    <div class="btnrow">
+      <button class="btn" id="linkBtn" onclick="submitCode()">ချိတ်ဆက်မယ်</button>
+      <a class="btn secondary" href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">Bot ဖွင့်မယ်</a>
+    </div>
+    <div id="loginMsg" class="muted" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card" id="loginPrompt">
+    <h2>👤 My Account</h2>
+    <p>Account ကြည့်ဖို့ အရင် login ဝင်ရမယ်။</p>
+    <div class="btnrow">
+      <button class="btn" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+    </div>
+  </div>
+
+  <div id="accountContent" style="display:none">
+    <div class="card">
+      <h2>👤 My Profile</h2>
+      <div id="profileBlock"><p class="muted">ဆွဲနေတယ်…</p></div>
+      <div class="btnrow">
+        <a class="btn secondary" href="../mykey/">ကျွန်တော့် Key တွေ ကြည့်မယ်</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💰 Wallet History</h2>
+      <div id="walletBlock"><p class="muted">ဆွဲနေတယ်…</p></div>
+      <p class="muted small">Wallet history က အခုကစ မှတ်တမ်းတင်တယ် — အဟောင်း transactions တွေ ဒီမှာ မပေါ်နိုင်ပါ။</p>
+    </div>
+
+    <div class="card" id="topupCard">
+      <h2>💳 Top Up — ငွေသွင်းမယ်</h2>
+      <p>Web ငွေသွင်း (ပြေစာ photo တင်တာ) က မကြာခင် ရမယ် — အခုတော့ Telegram bot မှာ ငွေသွင်းပါ။ Bot မှာ ငွေသွင်းပြီး admin approve လုပ်ရင် points တက်လာမယ်။</p>
+      <div class="btnrow">
+        <button class="btn" onclick="openBot()">Telegram Bot မှာ ငွေသွင်းမယ်</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    KeyShop · Telegram bot <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">@KeyShopMmBot</a>
+  </footer>
+</div>
+
+<script>var PAGE_PREFIX = "../";</script>
+<script src="../app.js"></script>
+<script>
+window.onMeLoaded = function (me) {
+  document.getElementById("loginPrompt").style.display = "none";
+  document.getElementById("accountContent").style.display = "block";
+  var u = session.user;
+  var keys = me.keys || [];
+  document.getElementById("profileBlock").innerHTML =
+    "<p><b>" + esc(u.first_name || "Telegram User") + "</b>" +
+    (u.username ? " · @" + esc(u.username) : "") + "<br>" +
+    '<span class="muted">Telegram ID: ' + esc(u.id) + "</span><br>" +
+    (me.user.vpnUsername ? '<span class="muted">VPN username: ' + esc(me.user.vpnUsername) + "</span><br>" : "") +
+    "လက်ကျန်: <b style=\"color:var(--green)\">" + fmtKyat(me.user.kyat) + "</b> (" + me.user.points + " points)<br>" +
+    '<span class="muted">Key ' + keys.length + " ခု ရှိတယ်</span></p>";
+  var w = me.wallet || [];
+  if (!w.length) {
+    document.getElementById("walletBlock").innerHTML = '<p class="muted">မှတ်တမ်း မရှိသေးပါ။</p>';
+  } else {
+    document.getElementById("walletBlock").innerHTML = w.map(function (t) {
+      var d = Number(t.delta || 0);
+      var cls = d >= 0 ? "plus" : "minus";
+      var sign = d >= 0 ? "+" : "";
+      return '<div class="txrow"><span>' + esc(reasonLabel(t.reason)) + ' <span class="muted">' + fmtDate(t.ts) + "</span></span><span class=\"" + cls + "\">" + sign + d + " pts</span></div>";
+    }).join("");
+  }
+  if (location.hash) {
+    var el = document.querySelector(location.hash);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
+window.onLoggedOut = function () {
+  document.getElementById("loginPrompt").style.display = "block";
+  document.getElementById("accountContent").style.display = "none";
+};
+if (session) {
+  document.getElementById("loginPrompt").style.display = "none";
+  document.getElementById("accountContent").style.display = "block";
+}
+</script>
+</body>
+</html>

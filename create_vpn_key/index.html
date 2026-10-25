@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create Key — KeyShop</title>
+<meta name="description" content="KeyShop: plan ရွေး, server ရွေး, points နဲ့ VPN key ဖန်တီး။">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🔑 <span>KeyShop</span></h1>
+      <p class="tag">Outline VPN key ဆိုင် — မြန်မြန်၊ လွယ်လွယ်၊ စိတ်ချရတယ်။</p>
+    </div>
+    <div id="loginArea">
+      <div id="loginBtnWrap">
+        <button class="btn secondary" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+      </div>
+      <div id="userChip" style="display:none" onclick="togglePanel()"></div>
+      <div id="panel" style="display:none"></div>
+    </div>
+  </header>
+
+  <nav>
+    <a href="../">🏠 Home</a>
+    <a href="../mykey/">🔑 My Key</a>
+    <a href="./" class="active">✨ Create Key</a>
+    <a href="../account/">👤 Account</a>
+  </nav>
+
+  <div class="card" id="loginCard" style="display:none">
+    <h2>🌐 Telegram Bot နဲ့ Login ဝင်မယ်</h2>
+    <p>Password မလိုပါ — bot က code ပေးမယ်၊ အဲ့ code ကို ဒီမှာ ရိုက်ထည့်ရုံပဲ။</p>
+    <p>၁ · Telegram မှာ <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener" style="color:var(--green)">@KeyShopMmBot</a> ကို ဖွင့်ပါ။<br>
+       ၂ · Bot ထဲမှာ <code>/link</code> ပို့ပါ — 6-digit code တစ်ခု ရမယ်။<br>
+       ၃ · အဲ့ code ကို အောက်မှာ ရိုက်ထည့်ပြီး ချိတ်ဆက်မယ် ကို နှိပ်ပါ။ Code က ၁၀ မိနစ်ပဲ သက်တမ်းရှိတယ်။</p>
+    <input type="text" id="codeInput" inputmode="numeric" maxlength="6" placeholder="______" autocomplete="one-time-code">
+    <div class="btnrow">
+      <button class="btn" id="linkBtn" onclick="submitCode()">ချိတ်ဆက်မယ်</button>
+      <a class="btn secondary" href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">Bot ဖွင့်မယ်</a>
+    </div>
+    <div id="loginMsg" class="muted" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card" id="loginPrompt">
+    <h2>✨ Create Key</h2>
+    <p>Key ဖန်တီးဖို့ အရင် login ဝင်ရမယ်။</p>
+    <div class="btnrow">
+      <button class="btn" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+    </div>
+  </div>
+
+  <div id="createContent" style="display:none">
+    <div class="card">
+      <h2>✨ Key ဖန်တီးမယ်</h2>
+      <p id="balanceLine" class="muted">လက်ကျန် ဆွဲနေတယ်…</p>
+      <h2 style="margin-top:16px">Plan ရွေးပါ</h2>
+      <div id="planPicks"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
+      <div style="margin-top:14px">
+        <label for="createServer">Server ရွေးပါ</label>
+        <select id="createServer"></select>
+      </div>
+      <div style="margin-top:14px">
+        <label for="keyName">Key နာမည် (ဥပမာ: My iPhone)</label>
+        <input type="text" id="keyName" maxlength="64" placeholder="My iPhone">
+      </div>
+      <div class="btnrow">
+        <button class="btn" id="createBtn" onclick="submitCreate()">Key ဖန်တီးမယ်</button>
+      </div>
+      <div id="createMsg" class="muted" style="margin-top:10px"></div>
+      <div id="createResult" class="result" style="display:none; margin-top:12px"></div>
+    </div>
+  </div>
+
+  <footer>
+    KeyShop · Telegram bot <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">@KeyShopMmBot</a>
+  </footer>
+</div>
+
+<script>var PAGE_PREFIX = "../";</script>
+<script src="../app.js"></script>
+<script>
+var selectedPlan = null;
+var planList = [];
+function pickPlan(key, el) {
+  selectedPlan = key;
+  document.querySelectorAll(".planpick").forEach(function (d) { d.classList.remove("selected"); });
+  el.classList.add("selected");
+}
+async function loadCreatePlans() {
+  var box = document.getElementById("planPicks");
+  try {
+    var res = await fetch(API + "/api/plans");
+    var data = await res.json();
+    if (!res.ok || !data.ok) throw new Error("plans ဆွဲမရပါ");
+    planList = data.plans || [];
+    var pre = null;
+    try { pre = new URLSearchParams(location.search).get("plan"); } catch (e) {}
+    box.innerHTML = planList.map(function (p) {
+      return '<div class="planpick" onclick="pickPlan(\'' + esc(p.key) + '\', this)"><h3>' + esc(p.name) + '</h3>' +
+        '<div class="price" style="font-size:20px">' + fmtKyat(p.costKyat) + '</div>' +
+        '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက် · " + p.costPoints + " points</div></div>";
+    }).join("");
+    var sel = document.getElementById("createServer");
+    if (data.servers && data.servers.length) {
+      sel.innerHTML = data.servers.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
+    } else {
+      document.getElementById("createBtn").disabled = true;
+      document.getElementById("createMsg").innerHTML = '<span class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</span>';
+    }
+    var want = pre && planList.some(function (p) { return p.key === pre; }) ? pre : (planList[0] ? planList[0].key : null);
+    if (want) {
+      var els = document.querySelectorAll(".planpick");
+      planList.forEach(function (p, i) { if (p.key === want && els[i]) pickPlan(want, els[i]); });
+    }
+  } catch (e) {
+    box.innerHTML = '<p class="err">Plan တွေ ဆွဲမရပါ — အင်တာနက်စစ်ပြီး ပြန်ဖွင့်ကြည့်ပါ။</p>';
+  }
+}
+window.onMeLoaded = function (me) {
+  document.getElementById("loginPrompt").style.display = "none";
+  document.getElementById("createContent").style.display = "block";
+  document.getElementById("balanceLine").innerHTML = "လက်ကျန်: <b style=\"color:var(--green)\">" + fmtKyat(me.user.kyat) + "</b> (" + me.user.points + " points)";
+};
+window.onLoggedOut = function () {
+  document.getElementById("loginPrompt").style.display = "block";
+  document.getElementById("createContent").style.display = "none";
+};
+async function submitCreate() {
+  var btn = document.getElementById("createBtn");
+  var msg = document.getElementById("createMsg");
+  var out = document.getElementById("createResult");
+  if (!session) { showLogin(); return; }
+  var name = (document.getElementById("keyName").value || "").trim();
+  var server = document.getElementById("createServer").value;
+  if (!selectedPlan) { msg.innerHTML = '<span class="err">Plan တစ်ခုကို ရွေးပါ။</span>'; return; }
+  if (!name || name.length > 64 || /[\u0000-\u001f\u007f]/.test(name)) {
+    msg.innerHTML = '<span class="err">Key နာမည် မှန်အောင် ရိုက်ပါ (၁–၆၄ လုံး)။</span>';
+    return;
+  }
+  btn.disabled = true; msg.textContent = "Key ဖန်တီးနေတယ်…"; out.style.display = "none";
+  try {
+    var res = await fetch(API + "/api/keys/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ plan: selectedPlan, server: server, name: name })
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      if (res.status === 401) { logout(); msg.innerHTML = '<span class="err">Session ကုန်သွားပြီ — ပြန် login ဝင်ပါ။</span>'; showLogin(); return; }
+      if (data.error === "insufficient points") {
+        msg.innerHTML = '<span class="err">Points မလောက်ပါ — လက်ကျန် ' + data.points + " points, လိုတာ " + data.cost + " points (" + fmtKyat(data.costKyat) + ")။</span>" +
+          '<div class="btnrow"><button class="btn secondary" onclick="openBot()">Bot မှာ ငွေသွင်းမယ်</button></div>';
+      } else {
+        msg.innerHTML = '<span class="err">' + esc(data.error || "Key ဖန်တီးမရပါ") + "</span>";
+      }
+      return;
+    }
+    msg.innerHTML = '<span class="ok">Key ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
+    out.style.display = "block";
+    out.innerHTML = "<p><b>Key:</b><br><code id=\"newKeyUrl\"></code></p>" +
+      '<div class="btnrow"><button class="btn" onclick="copyText(this, ' + JSON.stringify(data.accessUrl) + ')">Key ကို Copy ကူးမယ်</button>' +
+      '<a class="btn secondary" href="../mykey/">My Key မှာ ကြည့်မယ်</a></div>' +
+      '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + data.points + " points</p>";
+    document.getElementById("newKeyUrl").textContent = data.accessUrl;
+    document.getElementById("keyName").value = "";
+    loadMe();
+  } catch (e) {
+    msg.innerHTML = '<span class="err">ချိတ်ဆက်မရပါ — အင်တာနက်စစ်ပြီး ပြန်နှိပ်ပါ။</span>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+if (session) {
+  document.getElementById("loginPrompt").style.display = "none";
+  document.getElementById("createContent").style.display = "block";
+}
+loadCreatePlans();
+</script>
+</body>
+</html>

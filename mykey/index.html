@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Key — KeyShop</title>
+<meta name="description" content="KeyShop: ကျွန်တော့် VPN key တွေ, သက်တမ်းတိုး။">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🔑 <span>KeyShop</span></h1>
+      <p class="tag">Outline VPN key ဆိုင် — မြန်မြန်၊ လွယ်လွယ်၊ စိတ်ချရတယ်။</p>
+    </div>
+    <div id="loginArea">
+      <div id="loginBtnWrap">
+        <button class="btn secondary" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+      </div>
+      <div id="userChip" style="display:none" onclick="togglePanel()"></div>
+      <div id="panel" style="display:none"></div>
+    </div>
+  </header>
+
+  <nav>
+    <a href="../">🏠 Home</a>
+    <a href="./" class="active">🔑 My Key</a>
+    <a href="../create_vpn_key/">✨ Create Key</a>
+    <a href="../account/">👤 Account</a>
+  </nav>
+
+  <div class="card" id="loginCard" style="display:none">
+    <h2>🌐 Telegram Bot နဲ့ Login ဝင်မယ်</h2>
+    <p>Password မလိုပါ — bot က code ပေးမယ်၊ အဲ့ code ကို ဒီမှာ ရိုက်ထည့်ရုံပဲ။</p>
+    <p>၁ · Telegram မှာ <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener" style="color:var(--green)">@KeyShopMmBot</a> ကို ဖွင့်ပါ။<br>
+       ၂ · Bot ထဲမှာ <code>/link</code> ပို့ပါ — 6-digit code တစ်ခု ရမယ်။<br>
+       ၃ · အဲ့ code ကို အောက်မှာ ရိုက်ထည့်ပြီး ချိတ်ဆက်မယ် ကို နှိပ်ပါ။ Code က ၁၀ မိနစ်ပဲ သက်တမ်းရှိတယ်။</p>
+    <input type="text" id="codeInput" inputmode="numeric" maxlength="6" placeholder="______" autocomplete="one-time-code">
+    <div class="btnrow">
+      <button class="btn" id="linkBtn" onclick="submitCode()">ချိတ်ဆက်မယ်</button>
+      <a class="btn secondary" href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">Bot ဖွင့်မယ်</a>
+    </div>
+    <div id="loginMsg" class="muted" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card" id="loginPrompt">
+    <h2>🔑 My Key</h2>
+    <p>Key တွေ ကြည့်ဖို့ အရင် login ဝင်ရမယ်။</p>
+    <div class="btnrow">
+      <button class="btn" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+    </div>
+  </div>
+
+  <div id="keysContent" style="display:none">
+    <div class="card">
+      <h2>🧾 Order History — ကျွန်တော့် Key တွေ</h2>
+      <div id="keysMsg" class="muted" style="margin-bottom:8px"></div>
+      <div id="keysList"><p class="muted">ဆွဲနေတယ်…</p></div>
+      <div class="btnrow">
+        <a class="btn secondary" href="../create_vpn_key/">Key အသစ် ဖန်တီးမယ်</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    KeyShop · Telegram bot <a href="https://t.me/KeyShopMmBot" target="_blank" rel="noopener">@KeyShopMmBot</a>
+  </footer>
+</div>
+
+<script>var PAGE_PREFIX = "../";</script>
+<script src="../app.js"></script>
+<script>
+var renewPlans = [];
+async function loadRenewPlans() {
+  try {
+    var res = await fetch(API + "/api/plans");
+    var data = await res.json();
+    if (res.ok && data.ok) renewPlans = data.plans || [];
+  } catch (e) { renewPlans = []; }
+}
+function keyHtml(k) {
+  var title = esc(k.label || k.planKey || k.kind || "Key");
+  var srv = esc(k.serverName || "");
+  var exp = k.expiresAt ? fmtDate(k.expiresAt) : "";
+  var html = '<div class="keyitem"><b>' + title + "</b>" + (srv ? " · " + srv : "") +
+    (exp ? '<div class="muted small">သက်တမ်း ' + exp + " အထိ</div>" : "");
+  if (k.kind === "outline" && k.accessUrl) {
+    html += '<div class="btnrow"><button class="btn secondary small" style="padding:6px 12px" onclick="copyText(this, ' + JSON.stringify(k.accessUrl) + ')">Copy</button>';
+    if (k.label === "Trial") {
+      html += '<span class="muted small" style="align-self:center">Trial key ကို သက်တမ်းတိုးလို့မရပါ — plan ဝယ်ပါ။</span>';
+    } else {
+      html += '<button class="btn secondary small" style="padding:6px 12px" onclick="showRenewForm(this, ' + JSON.stringify(k.accessUrl) + ')">သက်တမ်းတိုးမယ်</button>';
+    }
+    html += '</div><div class="renewArea"></div>';
+  } else {
+    html += '<div class="muted small" style="margin-top:6px">ဒီ key အမျိုးအစားကို Bot မှာ သက်တမ်းတိုးပါ။</div>';
+  }
+  return html + "</div>";
+}
+function showRenewForm(btn, accessUrl) {
+  var item = btn.closest(".keyitem");
+  var area = item.querySelector(".renewArea");
+  if (!renewPlans.length) {
+    area.innerHTML = '<p class="err small">Plan တွေ ဆွဲမရပါ — ပြန်ဖွင့်ကြည့်ပါ။</p>';
+    return;
+  }
+  var opts = renewPlans.map(function (p) {
+    return '<option value="' + esc(p.key) + '">' + esc(p.name) + " — " + fmtKyat(p.costKyat) + "</option>";
+  }).join("");
+  area.innerHTML = '<label>သက်တမ်းတိုးမယ့် plan ရွေးပါ</label>' +
+    '<select class="renewPlan">' + opts + "</select>" +
+    '<div class="btnrow"><button class="btn small" style="padding:8px 14px" onclick="doRenew(this, ' + JSON.stringify(accessUrl) + ')">အတည်ပြုမယ်</button>' +
+    '<button class="btn secondary small" style="padding:8px 14px" onclick="this.closest(\'.renewArea\').innerHTML=\'\'">မလုပ်တော့ဘူး</button></div>';
+}
+async function doRenew(btn, accessUrl) {
+  var area = btn.closest(".renewArea");
+  var plan = area.querySelector(".renewPlan").value;
+  var msg = document.getElementById("keysMsg");
+  btn.disabled = true; msg.textContent = "သက်တမ်းတိုးနေတယ်…";
+  try {
+    var res = await fetch(API + "/api/keys/renew", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ accessUrl: accessUrl, plan: plan })
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      if (res.status === 401) { logout(); msg.innerHTML = '<span class="err">Session ကုန်သွားပြီ — ပြန် login ဝင်ပါ။</span>'; showLogin(); return; }
+      if (data.error === "insufficient points") {
+        msg.innerHTML = '<span class="err">Points မလောက်ပါ — လက်ကျန် ' + data.points + " points, လိုတာ " + data.cost + " points (" + fmtKyat(data.costKyat) + ")။ Bot မှာ ငွေသွင်းပါ။</span>";
+      } else {
+        msg.innerHTML = '<span class="err">' + esc(data.error || "သက်တမ်းတိုးမရပါ") + "</span>";
+      }
+      return;
+    }
+    msg.innerHTML = '<span class="ok">သက်တမ်းတိုးပြီးပြီ! သက်တမ်း ' + fmtDate(data.expiresAt) + " အထိ · ပမာဏ " + data.dataLimitGB + " GB · လက်ကျန် " + data.points + " points</span>";
+    area.innerHTML = "";
+    loadMe();
+  } catch (e) {
+    msg.innerHTML = '<span class="err">ချိတ်ဆက်မရပါ — အင်တာနက်စစ်ပြီး ပြန်နှိပ်ပါ။</span>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+window.onMeLoaded = function (me) {
+  document.getElementById("loginPrompt").style.display = "none";
+  document.getElementById("keysContent").style.display = "block";
+  var keys = (me.keys || []).slice().reverse();
+  if (!keys.length) {
+    document.getElementById("keysList").innerHTML = '<p class="muted">Key တွေ မရှိသေးပါ — Create Key page မှာ ဖန်တီးလို့ရတယ်။</p>';
+  } else {
+    document.getElementById("keysList").innerHTML = keys.map(keyHtml).join("");
+  }
+};
+window.onLoggedOut = function () {
+  document.getElementById("loginPrompt").style.display = "block";
+  document.getElementById("keysContent").style.display = "none";
+};
+if (session) {
+  document.getElementById("loginPrompt").style.display = "none";
+  document.getElementById("keysContent").style.display = "block";
+}
+loadRenewPlans();
+</script>
+</body>
+</html>
