@@ -65,7 +65,7 @@ nav a.active { border-color:var(--green); color:var(--green); }
 #bottomNav { display:none; }
 @media (max-width:640px) {
   body { padding-bottom:72px; }
-  header { position:sticky; top:0; z-index:30; background:var(--bg); padding:8px 0; flex-wrap:nowrap; align-items:center; }
+  header { position:sticky; top:0; z-index:50; background:var(--bg); padding:8px 0; flex-wrap:nowrap; align-items:center; }
   h1 { font-size:20px; }
   #userChip { padding:4px 10px 4px 4px; gap:8px; }
   #userChip .avatar { width:30px; height:30px; font-size:15px; }
