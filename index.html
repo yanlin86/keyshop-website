@@ -15,7 +15,7 @@
     </div>
     <div id="loginArea">
       <div id="loginBtnWrap">
-        <button class="btn secondary" onclick="showLogin()">Telegram Bot နဲ့ Login ဝင်မယ်</button>
+        <button class="btn secondary" style="padding:6px 14px;font-size:13px" onclick="showLogin()">login</button>
       </div>
       <div id="userChip" style="display:none" onclick="togglePanel()"></div>
       <div id="panel"></div>
@@ -30,11 +30,11 @@
   </nav>
 
   <div class="card hero">
-    <h2>Outline VPN Key — <span>မြန်မြန်၊ လွယ်လွယ်၊ စိတ်ချရတယ်</span></h2>
-    <p>အခမဲ့ trial 5 GB / ၁၀ ရက် ယူပါ · Plan ဝယ်ပြီး key တန်းရမယ် · Telegram bot နဲ့ ချိတ်ထားတယ်</p>
+    <h2>KSH <span>Vpn Key</span></h2>
+    <p>Free trial 5 GB ယူပါ</p>
     <div class="btnrow" style="justify-content:center">
-      <button class="btn" onclick="gotoTrial()">အခမဲ့ Trial ယူမယ်</button>
-      <button class="btn secondary" onclick="goCreate()">Key ဝယ်မယ်</button>
+      <button class="btn" onclick="gotoTrial()">Free trial ယူမယ်</button>
+      <button class="btn secondary" onclick="goCreate()">key ဝယ်မယ်</button>
     </div>
   </div>
 
@@ -53,33 +53,23 @@
   </div>
 
   <div class="card" id="trialCard">
-    <h2>အခမဲ့ Trial ယူပါ</h2>
-    <p><span class="ok">5 GB</span> · <span class="ok">၁၀ ရက်</span> · တစ်ယောက်ကို cooldown <span class="ok">၁ ရက်</span>။ Trial ယူဖို့ အရင် login ဝင်ရမယ် — login ဝင်ထားရင် trial က မင်း Telegram နဲ့ ချိတ်မယ် (bot နဲ့ cooldown တစ်ထပ်တည်း)။</p>
+    <h2>Free Trial ယူပါ</h2>
     <div id="trialServerWrap" style="display:none">
       <label for="trialServer">Server ရွေးပါ</label>
       <select id="trialServer"></select>
     </div>
     <div class="btnrow">
-      <button class="btn" id="trialBtn" onclick="claimTrial()">အခမဲ့ Trial ယူမယ်</button>
-      <button class="btn secondary" onclick="goCreate()">Key ဖန်တီးမယ်</button>
+      <button class="btn" id="trialBtn" onclick="claimTrial()">Free Trial ယူမယ်</button>
+      <button class="btn secondary" onclick="goCreate()">key ဖန်တီးမယ်</button>
     </div>
     <div id="trialMsg" class="muted" style="margin-top:10px"></div>
     <div id="trialResult" class="result" style="display:none; margin-top:12px"></div>
   </div>
 
   <div class="card">
-    <h2>Plan တွေ</h2>
-    <p class="muted">ဈေးနှုန်းတွေက live ဖြစ်တယ်။ Plan တစ်ခုကို နှိပ်ရင် Create Key page မှာ key တန်းဖန်တီးလို့ရတယ်။</p>
+    <h2>Vpn Key Plans</h2>
     <div id="plans" class="plans"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
     <div id="plansErr" class="err small" style="display:none"></div>
-  </div>
-
-  <div class="card" id="keysPreview" style="display:none">
-    <h2>🔑 ကျွန်တော့် Key တွေ</h2>
-    <div id="keysPreviewBody"></div>
-    <div class="btnrow">
-      <button class="btn secondary" onclick="goMyKey()">အကုန်ကြည့်မယ်</button>
-    </div>
   </div>
 
   <div class="card">
@@ -100,25 +90,6 @@
 <script src="app.js"></script>
 <script>
 function gotoTrial() { document.getElementById("trialCard").scrollIntoView({ behavior: "smooth", block: "start" }); }
-function goMyKey() {
-  if (!session) { showLogin(); return; }
-  location.href = "mykey/";
-}
-function renderKeysPreview(me) {
-  var card = document.getElementById("keysPreview");
-  var body = document.getElementById("keysPreviewBody");
-  var keys = (me.keys || []).slice().reverse().slice(0, 3);
-  if (!keys.length) { card.style.display = "none"; return; }
-  body.innerHTML = keys.map(function (k) {
-    var title = esc(k.label || k.planKey || k.kind || "Key");
-    var srv = esc(k.serverName || "");
-    var exp = k.expiresAt ? fmtDate(k.expiresAt) : "";
-    return '<div class="keyitem"><b>' + title + "</b>" + (srv ? " · " + srv : "") +
-      (exp ? '<div class="muted small">သက်တမ်း ' + exp + " အထိ</div>" : "") + "</div>";
-  }).join("");
-  card.style.display = "block";
-}
-window.onMeLoaded = function (me) { renderKeysPreview(me); };
 async function loadPlans() {
   var box = document.getElementById("plans");
   var errBox = document.getElementById("plansErr");
@@ -128,18 +99,21 @@ async function loadPlans() {
     if (!res.ok || !data.ok) throw new Error("plans ဆွဲမရပါ");
     var html = "";
     data.plans.forEach(function (p) {
-      html += '<div class="plan"><h3>' + esc(p.name) + '</h3><div class="price">' + fmtKyat(p.costKyat) + '</div>' +
-        '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက်</div>" +
-        '<div class="btnrow"><button class="btn secondary" onclick="goCreate(\'' + esc(p.key) + '\')">Key ဖန်တီးမယ်</button></div></div>';
+      html += '<div class="plan" style="display:flex;gap:12px;align-items:center"><div style="flex:1"><h3>' + esc(p.name) + '</h3><div class="price">' + fmtKyat(p.costKyat) + '</div>' +
+        '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက်</div></div>" +
+        '<button class="btn secondary" style="flex:none" onclick="goCreate(\'' + esc(p.key) + '\')">key ဖန်တီးမယ်</button></div>';
     });
     box.innerHTML = html;
     var sel = document.getElementById("trialServer");
     var wrap = document.getElementById("trialServerWrap");
-    if (data.servers && data.servers.length > 1) {
-      sel.innerHTML = data.servers.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
+    var trialServers = [];
+    (data.servers || []).forEach(function (s) { trialServers.push({ id: s.id, name: s.name }); });
+    (data.marzbanServers || []).forEach(function (s) { trialServers.push({ id: s.id, name: s.name + " (Marzban)" }); });
+    if (trialServers.length > 1) {
+      sel.innerHTML = trialServers.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
       wrap.style.display = "block";
-    } else if (data.servers && data.servers.length === 1) {
-      sel.innerHTML = '<option value="' + data.servers[0].id + '">' + esc(data.servers[0].name) + "</option>";
+    } else if (trialServers.length === 1) {
+      sel.innerHTML = '<option value="' + trialServers[0].id + '">' + esc(trialServers[0].name) + "</option>";
       wrap.style.display = "none";
     } else {
       document.getElementById("trialBtn").disabled = true;
@@ -180,13 +154,22 @@ async function claimTrial() {
       }
       return;
     }
-    msg.innerHTML = '<span class="ok">Trial ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
     out.style.display = "block";
-    out.innerHTML = "<p><b>Key:</b><br><code id=\"keyUrl\"></code></p>" +
-      '<div class="btnrow"><button class="btn" onclick="copyKey()">Key ကို Copy ကူးမယ်</button></div>' +
-      '<p class="muted">ပမာဏ ' + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · Server: " + esc(data.server.name) + "</p>";
-    document.getElementById("keyUrl").textContent = data.accessUrl;
-    out.dataset.key = data.accessUrl;
+    if (data.kind === "marzban") {
+      msg.innerHTML = '<span class="ok">Trial ရပြီ! အောက်က link ကို Hiddify/Outline app ထဲ ထည့်ပါ။</span>';
+      out.innerHTML = "<p><b>Username:</b> " + esc(data.username) + "<br><b>Link:</b><br><code id=\"keyUrl\"></code></p>" +
+        '<div class="btnrow"><button class="btn" onclick="copyKey()">Link ကို Copy ကူးမယ်</button></div>' +
+        '<p class="muted">ပမာဏ ' + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · Server: " + esc(data.server.name) + "</p>";
+      document.getElementById("keyUrl").textContent = data.link;
+      out.dataset.key = data.link;
+    } else {
+      msg.innerHTML = '<span class="ok">Trial ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
+      out.innerHTML = "<p><b>Key:</b><br><code id=\"keyUrl\"></code></p>" +
+        '<div class="btnrow"><button class="btn" onclick="copyKey()">Key ကို Copy ကူးမယ်</button></div>' +
+        '<p class="muted">ပမာဏ ' + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · Server: " + esc(data.server.name) + "</p>";
+      document.getElementById("keyUrl").textContent = data.accessUrl;
+      out.dataset.key = data.accessUrl;
+    }
     loadMe();
   } catch (e) {
     msg.innerHTML = '<span class="err">ချိတ်ဆက်မရပါ — အင်တာနက်စစ်ပြီး ပြန်နှိပ်ပါ။</span>';
