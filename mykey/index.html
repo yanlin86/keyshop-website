@@ -90,7 +90,17 @@ function keyHtml(k) {
     if (k.label === "Trial") {
       html += '<span class="muted small" style="align-self:center">Trial key ကို သက်တမ်းတိုးလို့မရပါ — plan ဝယ်ပါ။</span>';
     } else {
-      html += '<button class="btn secondary small" style="padding:6px 12px" onclick="showRenewForm(this, ' + JSON.stringify(k.accessUrl) + ')">သက်တမ်းတိုးမယ်</button>';
+      html += '<button class="btn secondary small" style="padding:6px 12px" onclick="showRenewForm(this, \'outline\', ' + JSON.stringify(k.accessUrl) + ')">သက်တမ်းတိုးမယ်</button>';
+    }
+    html += '</div><div class="renewArea"></div>';
+  } else if (k.kind === "subscription" && k.username) {
+    html += '<div class="muted small">Username: ' + esc(k.username) + "</div>";
+    html += '<div class="btnrow">';
+    if (k.link) html += '<button class="btn secondary small" style="padding:6px 12px" onclick="copyText(this, ' + JSON.stringify(k.link) + ')">Link Copy</button>';
+    if (k.label === "Trial") {
+      html += '<span class="muted small" style="align-self:center">Trial key ကို သက်တမ်းတိုးလို့မရပါ — plan ဝယ်ပါ။</span>';
+    } else {
+      html += '<button class="btn secondary small" style="padding:6px 12px" onclick="showRenewForm(this, \'subscription\', ' + JSON.stringify(k.username) + ')">သက်တမ်းတိုးမယ်</button>';
     }
     html += '</div><div class="renewArea"></div>';
   } else {
@@ -98,9 +108,11 @@ function keyHtml(k) {
   }
   return html + "</div>";
 }
-function showRenewForm(btn, accessUrl) {
+function showRenewForm(btn, kind, ident) {
   var item = btn.closest(".keyitem");
   var area = item.querySelector(".renewArea");
+  area.dataset.kind = kind;
+  area.dataset.ident = ident;
   if (!renewPlans.length) {
     area.innerHTML = '<p class="err small">Plan တွေ ဆွဲမရပါ — ပြန်ဖွင့်ကြည့်ပါ။</p>';
     return;
@@ -110,19 +122,23 @@ function showRenewForm(btn, accessUrl) {
   }).join("");
   area.innerHTML = '<label>သက်တမ်းတိုးမယ့် plan ရွေးပါ</label>' +
     '<select class="renewPlan">' + opts + "</select>" +
-    '<div class="btnrow"><button class="btn small" style="padding:8px 14px" onclick="doRenew(this, ' + JSON.stringify(accessUrl) + ')">အတည်ပြုမယ်</button>' +
+    '<div class="btnrow"><button class="btn small" style="padding:8px 14px" onclick="doRenew(this)">အတည်ပြုမယ်</button>' +
     '<button class="btn secondary small" style="padding:8px 14px" onclick="this.closest(\'.renewArea\').innerHTML=\'\'">မလုပ်တော့ဘူး</button></div>';
 }
-async function doRenew(btn, accessUrl) {
+async function doRenew(btn) {
   var area = btn.closest(".renewArea");
   var plan = area.querySelector(".renewPlan").value;
+  var kind = area.dataset.kind;
+  var ident = area.dataset.ident;
   var msg = document.getElementById("keysMsg");
   btn.disabled = true; msg.textContent = "သက်တမ်းတိုးနေတယ်…";
   try {
-    var res = await fetch(API + "/api/keys/renew", {
+    var endpoint = kind === "subscription" ? "/api/subscriptions/renew" : "/api/keys/renew";
+    var reqBody = kind === "subscription" ? { username: ident, plan: plan } : { accessUrl: ident, plan: plan };
+    var res = await fetch(API + endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
-      body: JSON.stringify({ accessUrl: accessUrl, plan: plan })
+      body: JSON.stringify(reqBody)
     });
     var data = await res.json();
     if (!res.ok || !data.ok) {

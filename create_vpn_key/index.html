@@ -56,6 +56,9 @@
     <div class="card">
       <h2>✨ Key ဖန်တီးမယ်</h2>
       <p id="balanceLine" class="muted">လက်ကျန် ဆွဲနေတယ်…</p>
+      <h2 style="margin-top:16px">Key အမျိုးအစား ရွေးပါ</h2>
+      <div id="typeOutlinePick" class="planpick selected" onclick="selectType('outline')"><h3>Outline Key</h3><div class="meta">ss:// key link — Outline app နဲ့ သုံးမယ်</div></div>
+      <div id="typeMarzbanPick" class="planpick" onclick="selectType('marzban')"><h3>Marzban (Subscription)</h3><div class="meta">Subscription link — Hiddify / Outline / Streisand နဲ့ သုံးမယ်</div></div>
       <h2 style="margin-top:16px">Plan ရွေးပါ</h2>
       <div id="planPicks"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
       <div style="margin-top:14px">
@@ -63,8 +66,9 @@
         <select id="createServer"></select>
       </div>
       <div style="margin-top:14px">
-        <label for="keyName">Key နာမည် (ဥပမာ: My iPhone)</label>
+        <label for="keyName" id="keyNameLabel">Key နာမည် (ဥပမာ: My iPhone)</label>
         <input type="text" id="keyName" maxlength="64" placeholder="My iPhone">
+        <div id="keyNameHint" class="muted small" style="display:none; margin-top:4px">အင်္ဂလိပ် စာလုံး၊ ဂဏန်း၊ _ ပဲ သုံးပါ (၃–၃၂ လုံး)။ ယူထားတဲ့ နာမည်ဆို _2, _3 နဲ့ အလိုလို ပြောင်းပေးမယ်။</div>
       </div>
       <div class="btnrow">
         <button class="btn" id="createBtn" onclick="submitCreate()">Key ဖန်တီးမယ်</button>
@@ -84,6 +88,30 @@
 <script>
 var selectedPlan = null;
 var planList = [];
+var keyType = "outline";
+var outlineServers = [];
+var marzbanServers = [];
+function fillServers() {
+  var sel = document.getElementById("createServer");
+  var list = keyType === "marzban" ? marzbanServers : outlineServers;
+  sel.innerHTML = list.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
+  document.getElementById("createBtn").disabled = !list.length;
+  if (!list.length) {
+    document.getElementById("createMsg").innerHTML = '<span class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</span>';
+  } else {
+    document.getElementById("createMsg").textContent = "";
+  }
+}
+function selectType(t) {
+  keyType = t;
+  document.getElementById("typeOutlinePick").classList.toggle("selected", t === "outline");
+  document.getElementById("typeMarzbanPick").classList.toggle("selected", t === "marzban");
+  document.getElementById("keyNameLabel").textContent = t === "marzban" ? "VPN Username (ဥပမာ: myuser)" : "Key နာမည် (ဥပမာ: My iPhone)";
+  document.getElementById("keyName").placeholder = t === "marzban" ? "myuser" : "My iPhone";
+  document.getElementById("keyNameHint").style.display = t === "marzban" ? "block" : "none";
+  document.getElementById("createBtn").textContent = t === "marzban" ? "Subscription ဖန်တီးမယ်" : "Key ဖန်တီးမယ်";
+  fillServers();
+}
 function pickPlan(key, el) {
   selectedPlan = key;
   document.querySelectorAll(".planpick").forEach(function (d) { d.classList.remove("selected"); });
@@ -103,13 +131,12 @@ async function loadCreatePlans() {
         '<div class="price" style="font-size:20px">' + fmtKyat(p.costKyat) + '</div>' +
         '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက် · " + p.costPoints + " points</div></div>";
     }).join("");
-    var sel = document.getElementById("createServer");
-    if (data.servers && data.servers.length) {
-      sel.innerHTML = data.servers.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
-    } else {
-      document.getElementById("createBtn").disabled = true;
-      document.getElementById("createMsg").innerHTML = '<span class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</span>';
+    outlineServers = data.servers || [];
+    marzbanServers = data.marzbanServers || [];
+    if (!marzbanServers.length) {
+      document.getElementById("typeMarzbanPick").style.display = "none";
     }
+    fillServers();
     var want = pre && planList.some(function (p) { return p.key === pre; }) ? pre : (planList[0] ? planList[0].key : null);
     if (want) {
       var els = document.querySelectorAll(".planpick");
@@ -137,15 +164,19 @@ async function submitCreate() {
   var server = document.getElementById("createServer").value;
   if (!selectedPlan) { msg.innerHTML = '<span class="err">Plan တစ်ခုကို ရွေးပါ။</span>'; return; }
   if (!name || name.length > 64 || /[\u0000-\u001f\u007f]/.test(name)) {
-    msg.innerHTML = '<span class="err">Key နာမည် မှန်အောင် ရိုက်ပါ (၁–၆၄ လုံး)။</span>';
+    msg.innerHTML = '<span class="err">' + (keyType === "marzban" ? "VPN Username မှန်အောင် ရိုက်ပါ။" : "Key နာမည် မှန်အောင် ရိုက်ပါ (၁–၆၄ လုံး)။") + "</span>";
     return;
   }
-  btn.disabled = true; msg.textContent = "Key ဖန်တီးနေတယ်…"; out.style.display = "none";
+  btn.disabled = true; msg.textContent = keyType === "marzban" ? "Subscription ဖန်တီးနေတယ်…" : "Key ဖန်တီးနေတယ်…"; out.style.display = "none";
   try {
-    var res = await fetch(API + "/api/keys/create", {
+    var endpoint = keyType === "marzban" ? "/api/subscriptions/create" : "/api/keys/create";
+    var reqBody = keyType === "marzban"
+      ? { plan: selectedPlan, server: server, username: name }
+      : { plan: selectedPlan, server: server, name: name };
+    var res = await fetch(API + endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
-      body: JSON.stringify({ plan: selectedPlan, server: server, name: name })
+      body: JSON.stringify(reqBody)
     });
     var data = await res.json();
     if (!res.ok || !data.ok) {
@@ -158,13 +189,23 @@ async function submitCreate() {
       }
       return;
     }
-    msg.innerHTML = '<span class="ok">Key ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
-    out.style.display = "block";
-    out.innerHTML = "<p><b>Key:</b><br><code id=\"newKeyUrl\"></code></p>" +
-      '<div class="btnrow"><button class="btn" onclick="copyText(this, ' + JSON.stringify(data.accessUrl) + ')">Key ကို Copy ကူးမယ်</button>' +
-      '<a class="btn secondary" href="../mykey/">My Key မှာ ကြည့်မယ်</a></div>' +
-      '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + data.points + " points</p>";
-    document.getElementById("newKeyUrl").textContent = data.accessUrl;
+    if (keyType === "marzban") {
+      msg.innerHTML = '<span class="ok">Subscription ရပြီ! အောက်က link ကို Hiddify / Outline / Streisand app ထဲ ထည့်ပါ။</span>';
+      out.style.display = "block";
+      out.innerHTML = "<p><b>VPN Username:</b> " + esc(data.username) + "<br><b>Subscription Link:</b><br><code id=\"newKeyUrl\"></code></p>" +
+        '<div class="btnrow"><button class="btn" onclick="copyText(this, ' + JSON.stringify(data.link) + ')">Link ကို Copy ကူးမယ်</button>' +
+        '<a class="btn secondary" href="../mykey/">My Key မှာ ကြည့်မယ်</a></div>' +
+        '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + data.points + " points</p>";
+      document.getElementById("newKeyUrl").textContent = data.link;
+    } else {
+      msg.innerHTML = '<span class="ok">Key ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
+      out.style.display = "block";
+      out.innerHTML = "<p><b>Key:</b><br><code id=\"newKeyUrl\"></code></p>" +
+        '<div class="btnrow"><button class="btn" onclick="copyText(this, ' + JSON.stringify(data.accessUrl) + ')">Key ကို Copy ကူးမယ်</button>' +
+        '<a class="btn secondary" href="../mykey/">My Key မှာ ကြည့်မယ်</a></div>' +
+        '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + data.points + " points</p>";
+      document.getElementById("newKeyUrl").textContent = data.accessUrl;
+    }
     document.getElementById("keyName").value = "";
     loadMe();
   } catch (e) {
