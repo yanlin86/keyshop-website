@@ -63,6 +63,13 @@
       <button class="btn secondary" onclick="goCreate()">key ဖန်တီးမယ်</button>
     </div>
     <div id="trialMsg" class="muted" style="margin-top:10px"></div>
+    <div id="trialDeleteWrap" style="display:none; margin-top:12px">
+      <p class="warn" id="trialDeleteText" style="margin-top:0"></p>
+      <div class="btnrow">
+        <button class="btn" id="trialDeleteBtn" onclick="deleteOldTrial()">trial key အဟောင်း ဖျက်မည်</button>
+        <button class="btn secondary" onclick="cancelDeleteTrial()">မလုပ်တော့ပါ</button>
+      </div>
+    </div>
     <div id="trialResult" class="result" style="display:none; margin-top:12px"></div>
   </div>
 
@@ -143,7 +150,12 @@ async function claimTrial() {
     var res = await fetch(API + "/api/trial", { method: "POST", headers: headers, body: JSON.stringify(body) });
     var data = await res.json();
     if (!res.ok || !data.ok) {
-      if (res.status === 429 && data.nextEligibleAt) {
+      if (res.status === 409 && data.error === "live_trial" && data.liveTrial) {
+        var lt = data.liveTrial;
+        document.getElementById("trialDeleteText").innerHTML = "Trial key အဟောင်း ကျန်နေသေးတယ် — အသစ်ထုတ်ဖို့ အဟောင်းကို အရင်ဖျက်ရမယ်: " + esc(lt.serverName || "") + " · သက်တမ်း " + fmtDate(lt.expiresAt) + " အထိ";
+        document.getElementById("trialDeleteWrap").style.display = "block";
+        msg.innerHTML = '<span class="warn">Trial အဟောင်း ရှိနေလို့ အသစ်မထုတ်ပေးသေးပါ။</span>';
+      } else if (res.status === 429 && data.nextEligibleAt) {
         msg.innerHTML = '<span class="warn">Cooldown ရှိနေတယ် — ' + fmtDate(data.nextEligibleAt) + " နောက်မှ ပြန်ယူလို့ရမယ်။</span>";
       } else if (res.status === 401) {
         logout();
@@ -176,6 +188,40 @@ async function claimTrial() {
   } finally {
     btn.disabled = false;
   }
+}
+async function deleteOldTrial() {
+  var btn = document.getElementById("trialDeleteBtn");
+  var msg = document.getElementById("trialMsg");
+  if (!session) { showLogin(); return; }
+  btn.disabled = true; msg.textContent = "Trial အဟောင်း ဖျက်နေတယ်…";
+  try {
+    var res = await fetch(API + "/api/trial", { method: "DELETE", headers: { "Authorization": "Bearer " + session.token } });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      if (res.status === 404) {
+        document.getElementById("trialDeleteWrap").style.display = "none";
+        msg.innerHTML = '<span class="ok">Live trial မရှိတော့ပါ — Free Trial ယူမယ် ကို ထပ်နှိပ်လို့ရပါတယ်။</span>';
+      } else if (res.status === 401) {
+        logout();
+        msg.innerHTML = '<span class="err">Session ကုန်သွားပြီ — ပြန် login ဝင်ပြီးမှ ထပ်လုပ်ပါ။</span>';
+        showLogin();
+      } else {
+        msg.innerHTML = '<span class="err">' + esc(data.error || "ဖျက်မရပါ") + "</span>";
+      }
+      return;
+    }
+    document.getElementById("trialDeleteWrap").style.display = "none";
+    msg.innerHTML = '<span class="ok">Trial အဟောင်း ဖျက်ပြီးပြီ ✅ — Free Trial ယူမယ် ကို ထပ်နှိပ်ပါ။</span>';
+    loadMe();
+  } catch (e) {
+    msg.innerHTML = '<span class="err">ချိတ်ဆက်မရပါ — အင်တာနက်စစ်ပြီး ပြန်နှိပ်ပါ။</span>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+function cancelDeleteTrial() {
+  document.getElementById("trialDeleteWrap").style.display = "none";
+  document.getElementById("trialMsg").innerHTML = '<span class="muted">မလုပ်တော့ပါ — trial အဟောင်းကို ဆက်ထားပါတယ်။</span>';
 }
 function copyKey() {
   var out = document.getElementById("trialResult");
