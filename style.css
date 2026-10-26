@@ -58,3 +58,16 @@ nav a.active { border-color:var(--green); color:var(--green); }
 .planpick h3 { margin:0; font-size:17px; }
 .kv { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:15px; }
 .kv:last-child { border-bottom:0; }
+
+#bottomNav { display:none; }
+@media (max-width:640px) {
+  body { padding-bottom:84px; }
+  #bottomNav { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--card); border-top:1px solid var(--border); margin-top:0; padding:10px 10px calc(10px + env(safe-area-inset-bottom)); gap:8px; }
+  #bottomNav a { flex:1; text-align:center; padding:10px 4px; font-size:12px; }
+  #bottomNav a.active { border-color:var(--green); color:var(--green); }
+  body[data-page="home"] h1 { font-size:24px; }
+  body[data-page="home"] h2 { font-size:17px; }
+  body[data-page="home"] .hero h2 { font-size:20px; }
+  body[data-page="home"] .btn { padding:10px 14px; font-size:14px; }
+  body[data-page="home"] .price { font-size:20px; }
+}

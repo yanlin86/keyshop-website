@@ -149,5 +149,28 @@ function copyText(btn, text) {
     document.body.removeChild(ta); done();
   }
 }
+// Bottom nav (phone only; hidden on desktop via CSS) + page marker
+// used by the phone-only home rules in style.css.
+(function () {
+  var path = location.pathname.replace(/\/+$/, "");
+  var page = "home";
+  if (path.indexOf("/mykey") !== -1) page = "mykey";
+  else if (path.indexOf("/create_vpn_key") !== -1) page = "create";
+  else if (path.indexOf("/account") !== -1) page = "account";
+  document.body.setAttribute("data-page", page);
+  var P = (typeof PAGE_PREFIX !== "undefined") ? PAGE_PREFIX : "";
+  var items = [
+    { key: "home", href: P || "./", label: "🏠 Home" },
+    { key: "mykey", href: P + "mykey/", label: "🔑 My Key" },
+    { key: "create", href: P + "create_vpn_key/", label: "✨ Create Key" },
+    { key: "account", href: P + "account/", label: "👤 Account" }
+  ];
+  var nav = document.createElement("nav");
+  nav.id = "bottomNav";
+  nav.innerHTML = items.map(function (it) {
+    return '<a href="' + it.href + '"' + (it.key === page ? ' class="active"' : "") + ">" + it.label + "</a>";
+  }).join("");
+  document.body.appendChild(nav);
+})();
 renderHeader();
 if (session) loadMe();
