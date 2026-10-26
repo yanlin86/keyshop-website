@@ -36,12 +36,25 @@ function showLogin() {
   var inp = document.getElementById("codeInput");
   if (inp) inp.focus();
 }
-function hidePanel() { var p = document.getElementById("panel"); if (p) p.style.display = "none"; }
+function hidePanel() {
+  var p = document.getElementById("panel");
+  if (p) p.classList.remove("open");
+  var b = document.getElementById("menuBackdrop");
+  if (b) b.classList.remove("show");
+}
 function togglePanel() {
   var p = document.getElementById("panel");
   if (!p) return;
-  p.style.display = (p.style.display === "none" || !p.style.display) ? "block" : "none";
+  p.classList.toggle("open");
+  var b = document.getElementById("menuBackdrop");
+  if (b) b.classList.toggle("show", p.classList.contains("open"));
 }
+(function () {
+  var b = document.createElement("div");
+  b.id = "menuBackdrop";
+  b.onclick = hidePanel;
+  document.body.appendChild(b);
+})();
 function renderHeader() {
   var wrap = document.getElementById("loginBtnWrap");
   var chip = document.getElementById("userChip");
@@ -70,7 +83,7 @@ function renderHeader() {
       '<button onclick="logout()">🚪 Log out</button></div>';
   } else {
     chip.style.display = "none";
-    panel.style.display = "none";
+    hidePanel();
     wrap.style.display = "block";
   }
 }
@@ -160,15 +173,16 @@ function copyText(btn, text) {
   document.body.setAttribute("data-page", page);
   var P = (typeof PAGE_PREFIX !== "undefined") ? PAGE_PREFIX : "";
   var items = [
-    { key: "home", href: P || "./", label: "🏠 Home" },
-    { key: "mykey", href: P + "mykey/", label: "🔑 My Key" },
-    { key: "create", href: P + "create_vpn_key/", label: "✨ Create Key" },
-    { key: "account", href: P + "account/", label: "👤 Account" }
+    { key: "home", href: P || "./", icon: "🏠", text: "Home" },
+    { key: "mykey", href: P + "mykey/", icon: "🔑", text: "My Key" },
+    { key: "create", href: P + "create_vpn_key/", icon: "✨", text: "Create Key" },
+    { key: "account", href: P + "account/", icon: "👤", text: "Account" }
   ];
   var nav = document.createElement("nav");
   nav.id = "bottomNav";
   nav.innerHTML = items.map(function (it) {
-    return '<a href="' + it.href + '"' + (it.key === page ? ' class="active"' : "") + ">" + it.label + "</a>";
+    return '<a href="' + it.href + '"' + (it.key === page ? ' class="active"' : "") + ">" +
+      '<span class="bnavIcon">' + it.icon + "</span><span>" + it.text + "</span></a>";
   }).join("");
   document.body.appendChild(nav);
 })();
