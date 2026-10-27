@@ -74,7 +74,7 @@ function renderHeader() {
       '<div class="muted small">ID ' + esc(maskId(u.id)) + '</div>' +
       '<div class="live"><i></i>Telegram connected • LIVE</div></div></div>' +
       '<div class="pmenu">' +
-      (meData ? '<div style="font-size:15px">လက်ကျန်: <b style="color:var(--green)">' + fmtKyat(meData.user.kyat) + "</b> (" + meData.user.points + " points)</div>" : "") +
+      (meData ? '<div style="font-size:15px">လက်ကျန်: <b style="color:var(--green)">' + fmtKyat(meData.user.kyat) + "</b></div>" : "") +
       '<a href="' + P + 'account/#topupCard">💳 Top Up</a>' +
       '<a href="' + P + 'mykey/">🧾 Order History</a>' +
       '<a href="' + P + 'account/#walletBlock">💰 Wallet history</a>' +

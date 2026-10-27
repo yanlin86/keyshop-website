@@ -68,7 +68,7 @@
 
     <div class="card" id="topupCard">
       <h2>💳 Top Up — ငွေသွင်းမယ်</h2>
-      <p>Web ငွေသွင်း (ပြေစာ photo တင်တာ) က မကြာခင် ရမယ် — အခုတော့ Telegram bot မှာ ငွေသွင်းပါ။ Bot မှာ ငွေသွင်းပြီး admin approve လုပ်ရင် points တက်လာမယ်။</p>
+      <p>Web ငွေသွင်း (ပြေစာ photo တင်တာ) က မကြာခင် ရမယ် — အခုတော့ Telegram bot မှာ ငွေသွင်းပါ။ Bot မှာ ငွေသွင်းပြီး admin approve လုပ်ရင် လက်ကျန် တက်လာမယ်။</p>
       <div class="btnrow">
         <button class="btn" onclick="openBot()">Telegram Bot မှာ ငွေသွင်းမယ်</button>
       </div>
@@ -93,7 +93,7 @@ window.onMeLoaded = function (me) {
     (u.username ? " · @" + esc(u.username) : "") + "<br>" +
     '<span class="muted">Telegram ID: ' + esc(u.id) + "</span><br>" +
     (me.user.vpnUsername ? '<span class="muted">VPN username: ' + esc(me.user.vpnUsername) + "</span><br>" : "") +
-    "လက်ကျန်: <b style=\"color:var(--green)\">" + fmtKyat(me.user.kyat) + "</b> (" + me.user.points + " points)<br>" +
+    "လက်ကျန်: <b style=\"color:var(--green)\">" + fmtKyat(me.user.kyat) + "</b><br>" +
     '<span class="muted">Key ' + keys.length + " ခု ရှိတယ်</span></p>";
   var w = me.wallet || [];
   if (!w.length) {
@@ -103,7 +103,7 @@ window.onMeLoaded = function (me) {
       var d = Number(t.delta || 0);
       var cls = d >= 0 ? "plus" : "minus";
       var sign = d >= 0 ? "+" : "";
-      return '<div class="txrow"><span>' + esc(reasonLabel(t.reason)) + ' <span class="muted">' + fmtDate(t.ts) + "</span></span><span class=\"" + cls + "\">" + sign + d + " pts</span></div>";
+      return '<div class="txrow"><span>' + esc(reasonLabel(t.reason)) + ' <span class="muted">' + fmtDate(t.ts) + "</span></span><span class=\"" + cls + "\">" + sign + fmtKyat(d * 100) + "</span></div>";
     }).join("");
   }
   if (location.hash) {

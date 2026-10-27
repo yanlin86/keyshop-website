@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Create Key — KeyShop</title>
-<meta name="description" content="KeyShop: plan ရွေး, server ရွေး, points နဲ့ VPN key ဖန်တီး။">
+<meta name="description" content="KeyShop: plan ရွေး, server ရွေး, ကျပ်နဲ့ VPN key ဖန်တီး။">
 <link rel="stylesheet" href="../style.css">
 </head>
 <body>
@@ -128,7 +128,7 @@ async function loadCreatePlans() {
     box.innerHTML = planList.map(function (p) {
       return '<div class="planpick" onclick="pickPlan(\'' + esc(p.key) + '\', this)"><h3>' + esc(p.name) + '</h3>' +
         '<div class="price" style="font-size:20px">' + fmtKyat(p.costKyat) + '</div>' +
-        '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက် · " + p.costPoints + " points</div></div>";
+        '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက် · " + fmtKyat(p.costKyat) + "</div></div>";
     }).join("");
     outlineServers = data.servers || [];
     marzbanServers = data.marzbanServers || [];
@@ -148,7 +148,7 @@ async function loadCreatePlans() {
 window.onMeLoaded = function (me) {
   document.getElementById("loginPrompt").style.display = "none";
   document.getElementById("createContent").style.display = "block";
-  document.getElementById("balanceLine").innerHTML = "လက်ကျန်: <b style=\"color:var(--green)\">" + fmtKyat(me.user.kyat) + "</b> (" + me.user.points + " points)";
+  document.getElementById("balanceLine").innerHTML = "လက်ကျန်: <b style=\"color:var(--green)\">" + fmtKyat(me.user.kyat) + "</b>";
 };
 window.onLoggedOut = function () {
   document.getElementById("loginPrompt").style.display = "block";
@@ -181,7 +181,7 @@ async function submitCreate() {
     if (!res.ok || !data.ok) {
       if (res.status === 401) { logout(); msg.innerHTML = '<span class="err">Session ကုန်သွားပြီ — ပြန် login ဝင်ပါ။</span>'; showLogin(); return; }
       if (data.error === "insufficient points") {
-        msg.innerHTML = '<span class="err">Points မလောက်ပါ — လက်ကျန် ' + data.points + " points, လိုတာ " + data.cost + " points (" + fmtKyat(data.costKyat) + ")။</span>" +
+        msg.innerHTML = '<span class="err">ငွေ မလောက်ပါ — လက်ကျန် ' + fmtKyat((data.points || 0) * 100) + "၊ လိုတာ " + fmtKyat(data.costKyat) + "။</span>" +
           '<div class="btnrow"><button class="btn secondary" onclick="openBot()">Bot မှာ ငွေသွင်းမယ်</button></div>';
       } else {
         msg.innerHTML = '<span class="err">' + esc(data.error || "Key ဖန်တီးမရပါ") + "</span>";
@@ -194,7 +194,7 @@ async function submitCreate() {
       out.innerHTML = "<p><b>VPN Username:</b> " + esc(data.username) + "<br><b>Subscription Link:</b><br><code id=\"newKeyUrl\"></code></p>" +
         '<div class="btnrow"><button class="btn" onclick="copyText(this, ' + JSON.stringify(data.link) + ')">Link ကို Copy ကူးမယ်</button>' +
         '<a class="btn secondary" href="../mykey/">My Key မှာ ကြည့်မယ်</a></div>' +
-        '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + data.points + " points</p>";
+        '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + fmtKyat((data.points || 0) * 100) + "</p>";
       document.getElementById("newKeyUrl").textContent = data.link;
     } else {
       msg.innerHTML = '<span class="ok">Key ရပြီ! အောက်က key ကို Outline app ထဲ ထည့်ပါ။</span>';
@@ -202,7 +202,7 @@ async function submitCreate() {
       out.innerHTML = "<p><b>Key:</b><br><code id=\"newKeyUrl\"></code></p>" +
         '<div class="btnrow"><button class="btn" onclick="copyText(this, ' + JSON.stringify(data.accessUrl) + ')">Key ကို Copy ကူးမယ်</button>' +
         '<a class="btn secondary" href="../mykey/">My Key မှာ ကြည့်မယ်</a></div>' +
-        '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + data.points + " points</p>";
+        '<p class="muted">Plan: ' + esc(data.plan) + " · Server: " + esc(data.server.name) + " · ပမာဏ " + data.dataLimitGB + " GB · သက်တမ်း " + fmtDate(data.expiresAt) + " အထိ · လက်ကျန် " + fmtKyat((data.points || 0) * 100) + "</p>";
       document.getElementById("newKeyUrl").textContent = data.accessUrl;
     }
     document.getElementById("keyName").value = "";
