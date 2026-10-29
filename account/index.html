@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Account — KeyShop</title>
 <meta name="description" content="KeyShop account: profile, လက်ကျန်, wallet history, ငွေသွင်း။">
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../style.css?v=20261029-web-topup">
 </head>
 <body>
 <div class="wrap">
@@ -68,10 +68,24 @@
 
     <div class="card" id="topupCard">
       <h2>💳 Top Up — ငွေသွင်းမယ်</h2>
-      <p>Web ငွေသွင်း (ပြေစာ photo တင်တာ) က မကြာခင် ရမယ် — အခုတော့ Telegram bot မှာ ငွေသွင်းပါ။ Bot မှာ ငွေသွင်းပြီး admin approve လုပ်ရင် လက်ကျန် တက်လာမယ်။</p>
-      <div class="btnrow">
-        <button class="btn" onclick="openBot()">Telegram Bot မှာ ငွေသွင်းမယ်</button>
-      </div>
+      <p>ငွေပမာဏနဲ့ ငွေလွှဲပြေစာပုံကို တင်ပါ။ Request ကို Telegram bot မှာ Admin က စစ်ပြီး Approve သို့ Reject လုပ်ပေးမယ်။ အနည်းဆုံး 2,500 ကျပ်။</p>
+      <form id="webTopupForm" onsubmit="submitWebsiteTopup(event)">
+        <label for="webTopupMethod">ငွေလွှဲနည်း</label>
+        <select id="webTopupMethod" required onchange="showTopupPaymentDetails()">
+          <option value="">ရွေးပါ…</option>
+        </select>
+        <div id="topupPaymentDetails" class="muted small" style="margin-top:8px"></div>
+        <label for="webTopupAmount">ငွေပမာဏ (ကျပ်)</label>
+        <input type="number" id="webTopupAmount" min="2500" step="1" inputmode="numeric" placeholder="ဥပမာ 5000" required>
+        <label for="webTopupReceipt">ငွေလွှဲပြေစာပုံ</label>
+        <input type="file" id="webTopupReceipt" accept="image/jpeg,image/png,image/webp" required>
+        <p class="muted small">JPG, PNG, WebP ပုံဖြစ်ရမယ်၊ 10 MB အထိ တင်နိုင်တယ်။</p>
+        <div class="btnrow">
+          <button class="btn" id="webTopupSubmit" type="submit">ပြေစာပို့ပြီး စစ်ဆေးခိုင်းမယ်</button>
+          <button class="btn secondary" type="button" onclick="openBot()">Telegram bot မှတစ်ဆင့် သွင်းမယ်</button>
+        </div>
+      </form>
+      <div id="webTopupMsg" class="muted" role="status" style="margin-top:10px"></div>
     </div>
   </div>
 
@@ -81,11 +95,79 @@
 </div>
 
 <script>var PAGE_PREFIX = "../";</script>
-<script src="../app.js"></script>
+<script src="../app.js?v=20261029-web-topup"></script>
 <script>
+var topupMethods = [];
+async function loadTopupMethods() {
+  var select = document.getElementById("webTopupMethod");
+  if (!select || select.dataset.loaded === "1") return;
+  try {
+    var res = await fetch(API + "/api/plans");
+    var data = await res.json();
+    if (!res.ok || !data.ok || !data.topup) throw new Error("ငွေလွှဲနည်း ဆွဲမရပါ");
+    topupMethods = data.topup.methods || [];
+    select.innerHTML = '<option value="">ရွေးပါ…</option>' + topupMethods.map(function (method) {
+      return '<option value="' + esc(method.key) + '">' + esc(method.name) + "</option>";
+    }).join("");
+    document.getElementById("webTopupAmount").min = data.topup.minKyat;
+    select.dataset.loaded = "1";
+  } catch (e) {
+    document.getElementById("webTopupMsg").innerHTML = '<span class="err">ငွေလွှဲနည်း ဆွဲမရပါ — ခဏနေပြန်ဖွင့်ပါ။</span>';
+  }
+}
+function showTopupPaymentDetails() {
+  var method = topupMethods.find(function (item) { return item.key === document.getElementById("webTopupMethod").value; });
+  var box = document.getElementById("topupPaymentDetails");
+  if (!method) { box.textContent = ""; return; }
+  box.innerHTML = '<p style="margin:6px 0">နံပါတ်: <b>' + esc(method.number) + '</b><br>အမည်: <b>' + esc(method.holder) + "</b></p>";
+}
+async function submitWebsiteTopup(event) {
+  event.preventDefault();
+  var message = document.getElementById("webTopupMsg");
+  var button = document.getElementById("webTopupSubmit");
+  var fileInput = document.getElementById("webTopupReceipt");
+  if (!session || !session.token) { showLogin(); return; }
+  var amount = Number(document.getElementById("webTopupAmount").value);
+  var file = fileInput.files && fileInput.files[0];
+  if (!Number.isSafeInteger(amount) || amount < 2500) {
+    message.innerHTML = '<span class="err">အနည်းဆုံး 2,500 ကျပ် သွင်းနိုင်ပါတယ်။</span>';
+    return;
+  }
+  if (!file || file.size > 10 * 1024 * 1024) {
+    message.innerHTML = '<span class="err">ပြေစာပုံရွေးပါ။ ဖိုင်အရွယ်အစား 10 MB ထက် မကြီးရပါ။</span>';
+    return;
+  }
+  var form = new FormData();
+  form.append("method", document.getElementById("webTopupMethod").value);
+  form.append("amount", String(amount));
+  form.append("receipt", file, file.name);
+  button.disabled = true;
+  message.textContent = "Request ပို့နေတယ်…";
+  try {
+    var res = await fetch(API + "/api/topup", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + session.token },
+      body: form
+    });
+    var data = await res.json();
+    if (!res.ok || !data.ok) {
+      if (res.status === 401) { logout(); showLogin(); return; }
+      if (res.status === 409) throw new Error("စစ်ဆေးရန်ကျန်တဲ့ ငွေသွင်း request တစ်ခု ရှိနေပါတယ်။ Admin ဆုံးဖြတ်ပြီးမှ ထပ်တင်ပါ။");
+      throw new Error(data.error === "amount too small" ? "အနည်းဆုံး 2,500 ကျပ် သွင်းနိုင်ပါတယ်။" : "Request ပို့မရပါ — အချက်အလက်နဲ့ ပြေစာပုံကို ပြန်စစ်ပါ။");
+    }
+    document.getElementById("webTopupForm").reset();
+    document.getElementById("topupPaymentDetails").textContent = "";
+    message.innerHTML = '<span class="ok">ပြေစာပို့ပြီးပါပြီ။ Telegram bot မှာ Admin စစ်ဆေးနေပါတယ်။ Approve / Reject ရလဒ်ကို Telegram မှာ အသိပေးပါမယ်။</span>';
+  } catch (e) {
+    message.innerHTML = '<span class="err">' + esc(e.message || "Request ပို့မရပါ") + "</span>";
+  } finally {
+    button.disabled = false;
+  }
+}
 window.onMeLoaded = function (me) {
   document.getElementById("loginPrompt").style.display = "none";
   document.getElementById("accountContent").style.display = "block";
+  loadTopupMethods();
   var u = session.user;
   var keys = me.keys || [];
   document.getElementById("profileBlock").innerHTML =

@@ -20,6 +20,9 @@ p { margin:8px 0; }
 .price { font-size:24px; font-weight:800; color:var(--green); margin:6px 0 0; }
 .plan .meta { color:var(--muted); font-size:14px; }
 select, input[type=text] { width:100%; background:#07100a; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:11px 12px; font-size:15px; margin-top:8px; }
+#webTopupForm label { display:block; margin-top:10px; }
+#webTopupForm input[type=number], #webTopupForm input[type=file] { display:block; width:100%; margin-top:8px; padding:11px 12px; border:1px solid var(--border); border-radius:10px; background:#07100a; color:var(--text); font:inherit; }
+#webTopupForm input[type=file]::file-selector-button { margin-right:10px; padding:7px 10px; border:1px solid var(--green); border-radius:7px; background:transparent; color:var(--green); cursor:pointer; }
 label { font-size:14px; color:var(--muted); }
 .result { word-break:break-all; }
 .ok { color:var(--green); }
