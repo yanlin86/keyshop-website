@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Account — KeyShop</title>
 <meta name="description" content="KeyShop account: profile, လက်ကျန်, wallet history, ငွေသွင်း။">
-<link rel="stylesheet" href="../style.css?v=20261029-polished-theme-menu-fix">
+<link rel="stylesheet" href="../style.css?v=20261029-admin-dashboard">
 </head>
 <body>
 <div class="wrap">
@@ -52,6 +52,27 @@
   </div>
 
   <div id="accountContent" style="display:none">
+    <div class="card admin-panel" id="adminPanelCard" style="display:none">
+      <div class="admin-panel-heading">
+        <div>
+          <h2>🛠 Admin Dashboard</h2>
+          <p class="muted">Deposit account တွေ၊ wallet နဲ့ လက်ရှိဝယ်ထားတဲ့ paid key တွေ</p>
+        </div>
+        <button class="btn secondary" type="button" id="adminRefreshBtn" onclick="loadAdminDashboard(adminPage)">🔄 Refresh</button>
+      </div>
+      <div class="admin-stats">
+        <div class="admin-stat"><span>Depositor Accounts</span><b id="adminDepositorCount">—</b></div>
+        <div class="admin-stat"><span>Total Deposited</span><b id="adminTotalDeposited">—</b></div>
+        <div class="admin-stat"><span>Pending Requests</span><b id="adminPendingCount">—</b></div>
+      </div>
+      <h3 class="admin-section-title">💰 Depositor Accounts</h3>
+      <div id="adminDepositorList"><p class="muted">ဆွဲနေတယ်…</p></div>
+      <div id="adminPageControls" class="btnrow admin-page-controls" style="display:none"></div>
+      <h3 class="admin-section-title">🧾 Recent Deposit Requests</h3>
+      <div id="adminTopupList"><p class="muted">ဆွဲနေတယ်…</p></div>
+      <p class="muted small admin-note">ပြေစာစစ်ဆေးပြီး Approve/Reject လုပ်ရန် Telegram bot admin chat ကို အသုံးပြုပါ။</p>
+    </div>
+
     <div class="card">
       <h2>👤 My Profile</h2>
       <div id="profileBlock"><p class="muted">ဆွဲနေတယ်…</p></div>
@@ -98,6 +119,54 @@
 <script src="../app.js?v=20261029-web-topup"></script>
 <script>
 var topupMethods = [];
+var adminPage = 0;
+async function loadAdminDashboard(page) {
+  var panel = document.getElementById("adminPanelCard");
+  if (!panel || !session || !session.token) return;
+  var button = document.getElementById("adminRefreshBtn");
+  if (button) button.disabled = true;
+  document.getElementById("adminDepositorList").innerHTML = '<p class="muted">ဆွဲနေတယ်…</p>';
+  try {
+    var headers = { "Authorization": "Bearer " + session.token };
+    var results = await Promise.all([
+      fetch(API + "/api/admin/depositors?page=" + encodeURIComponent(page || 0), { headers: headers }),
+      fetch(API + "/api/admin/topups", { headers: headers })
+    ]);
+    var data = await results[0].json();
+    var topups = await results[1].json();
+    if (results[0].status === 401 || results[1].status === 401) { logout(); showLogin(); return; }
+    if (results[0].status === 403 || !data.ok) throw new Error("Admin account လိုအပ်ပါတယ်။");
+    if (!topups.ok) throw new Error("Deposit request တွေ ဆွဲမရပါ။");
+    adminPage = data.page || 0;
+    document.getElementById("adminDepositorCount").textContent = Number(data.totalAccounts || 0).toLocaleString("en-US");
+    document.getElementById("adminTotalDeposited").textContent = fmtKyat(Number(data.totalDepositedKyat || 0));
+    document.getElementById("adminPendingCount").textContent = Number(topups.pendingCount || 0).toLocaleString("en-US");
+    var accounts = data.accounts || [];
+    document.getElementById("adminDepositorList").innerHTML = accounts.length ? accounts.map(function (account) {
+      var keys = account.keys || [];
+      var keyHtml = keys.length ? '<div class="admin-key-list">' + keys.map(function (key) {
+        return '<div class="admin-key"><b>' + esc(key.label || "Paid plan") + '</b><span>' + esc(key.name || "Key") + (key.serverName ? " · " + esc(key.serverName) : "") + (key.expiresAt ? " · " + esc(String(key.expiresAt).slice(0, 10)) + " ထိ" : "") + "</span></div>";
+      }).join("") + "</div>" : '<p class="muted small">လက်ရှိ paid key မရှိပါ။</p>';
+      return '<details class="admin-depositor"><summary><span><b>ID ' + esc(account.uid) + '</b><small>Wallet ' + fmtKyat(Number(account.walletKyat || 0)) + '</small></span><span class="admin-deposit-total">' + fmtKyat(Number(account.totalDepositedKyat || 0)) + '<small>' + keys.length + ' paid key</small></span></summary>' + keyHtml + "</details>";
+    }).join("") : '<p class="muted">Deposit မှတ်တမ်းရှိတဲ့ account မရှိသေးပါ။</p>';
+    var pageCount = Math.max(1, Math.ceil(Number(data.totalAccounts || 0) / Number(data.pageSize || 20)));
+    var controls = document.getElementById("adminPageControls");
+    controls.innerHTML = "";
+    controls.style.display = pageCount > 1 ? "flex" : "none";
+    if (adminPage > 0) controls.innerHTML += '<button class="btn secondary" type="button" onclick="loadAdminDashboard(' + (adminPage - 1) + ')">⬅️ အရင်</button>';
+    controls.innerHTML += '<span class="muted small">စာမျက်နှာ ' + (adminPage + 1) + " / " + pageCount + "</span>";
+    if (adminPage + 1 < pageCount) controls.innerHTML += '<button class="btn secondary" type="button" onclick="loadAdminDashboard(' + (adminPage + 1) + ')">နောက် ➡️</button>';
+    var requests = topups.requests || [];
+    document.getElementById("adminTopupList").innerHTML = requests.length ? requests.slice(0, 10).map(function (item) {
+      var status = item.status === "approved" ? "✅ Approved" : item.status === "rejected" ? "❌ Rejected" : "⏳ Pending";
+      return '<div class="admin-request"><span><b>ID ' + esc(item.uid) + '</b><small>' + esc(item.method || "—") + " · " + esc(fmtDate(item.createdAt)) + "</small></span><span class=\"admin-deposit-total\">" + esc(fmtKyat(Number(item.amount || 0))) + "<small>" + status + "</small></span></div>";
+    }).join("") : '<p class="muted small">မကြာသေးခင်က deposit request မရှိပါ။</p>';
+  } catch (e) {
+    document.getElementById("adminDepositorList").innerHTML = '<p class="err">' + esc(e.message || "Admin data ဆွဲမရပါ။") + "</p>";
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
 async function loadTopupMethods() {
   var select = document.getElementById("webTopupMethod");
   if (!select || select.dataset.loaded === "1") return;
@@ -168,6 +237,12 @@ window.onMeLoaded = function (me) {
   document.getElementById("loginPrompt").style.display = "none";
   document.getElementById("accountContent").style.display = "block";
   loadTopupMethods();
+  if (me.user && me.user.isAdmin) {
+    document.getElementById("adminPanelCard").style.display = "block";
+    loadAdminDashboard(0);
+  } else {
+    document.getElementById("adminPanelCard").style.display = "none";
+  }
   var u = session.user;
   var keys = me.keys || [];
   document.getElementById("profileBlock").innerHTML =
