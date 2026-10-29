@@ -223,7 +223,7 @@ footer a { color: var(--green-bright); }
 @media (max-width: 680px) {
   body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
   .wrap { width: min(100% - 28px, 560px); padding: 14px 0 28px; }
-  header { position: sticky; z-index: 30; top: 0; align-items: center; min-height: 56px; margin: -14px 0 0; padding: 10px 0 8px; background: linear-gradient(var(--bg) 76%, rgba(8, 13, 11, .88)); backdrop-filter: blur(14px); }
+  header { position: sticky; z-index: 50; top: 0; align-items: center; min-height: 56px; margin: -14px 0 0; padding: 10px 0 8px; background: linear-gradient(var(--bg) 76%, rgba(8, 13, 11, .88)); backdrop-filter: blur(14px); }
   h1 { font-size: 21px; }
   #userChip { gap: 8px; padding: 4px 10px 4px 4px; }
   #userChip .avatar { width: 30px; height: 30px; font-size: 14px; }
