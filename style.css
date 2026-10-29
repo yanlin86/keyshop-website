@@ -82,9 +82,9 @@ nav a.active { border-color:var(--green); color:var(--green); }
   #menuBackdrop.show { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:35; }
   body[data-page="home"] h2 { font-size:17px; }
   body[data-page="home"] .hero h2 { font-size:20px; }
-  body[data-page="home"] .hero { display:none; }
-  body[data-page="home"] .trial-title-desktop { display:none; }
-  body[data-page="home"] .trial-title-mobile { display:inline; }
+  body[data-page="home"] .hero { display:none !important; }
+  body[data-page="home"] .trial-title-desktop { display:none !important; }
+  body[data-page="home"] .trial-title-mobile { display:inline !important; }
   body[data-page="home"] .btn { padding:10px 14px; font-size:14px; }
   body[data-page="home"] .price { font-size:20px; }
 }
