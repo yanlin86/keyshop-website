@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KeyShop — VPN Key ဆိုင်</title>
 <meta name="description" content="KeyShop — Outline VPN key တွေ အခမဲ့ trial ယူပါ၊ plan တွေဝယ်ပါ။ Telegram bot နဲ့ login ဝင်ပြီး account ကို ဒီ site မှာပဲ ကြည့်လို့ရပါတယ်။">
-<link rel="stylesheet" href="style.css?v=20261029-2">
+<link rel="stylesheet" href="style.css?v=20261029-home-all">
 </head>
 <body>
 <div class="wrap">
@@ -29,15 +29,6 @@
     <a href="account/">👤 Account</a>
   </nav>
 
-  <div class="card hero">
-    <h2>KSH <span>Vpn Key</span></h2>
-    <p>Free trial 5 GB ယူပါ</p>
-    <div class="btnrow" style="justify-content:center">
-      <button class="btn" onclick="gotoTrial()">Free trial ယူမယ်</button>
-      <button class="btn secondary" onclick="goCreate()">key ဝယ်မယ်</button>
-    </div>
-  </div>
-
   <div class="card" id="loginCard" style="display:none">
     <h2>🌐 Telegram Bot နဲ့ Login ဝင်မယ်</h2>
     <p>Password မလိုပါ — bot က code ပေးမယ်၊ အဲ့ code ကို ဒီမှာ ရိုက်ထည့်ရုံပဲ။</p>
@@ -53,7 +44,7 @@
   </div>
 
   <div class="card" id="trialCard">
-    <h2 class="trial-title"><span class="trial-title-desktop">Free Trial ယူပါ</span><span class="trial-title-mobile">Free trial 5GB ယူပါ</span></h2>
+    <h2>Free trial 5GB ယူပါ</h2>
     <div id="trialServerWrap" style="display:none">
       <label for="trialServer">Server ရွေးပါ</label>
       <select id="trialServer"></select>
@@ -96,7 +87,6 @@
 <script>var PAGE_PREFIX = "";</script>
 <script src="app.js"></script>
 <script>
-function gotoTrial() { document.getElementById("trialCard").scrollIntoView({ behavior: "smooth", block: "start" }); }
 async function loadPlans() {
   var box = document.getElementById("plans");
   var errBox = document.getElementById("plansErr");

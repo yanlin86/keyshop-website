@@ -55,10 +55,6 @@ footer a { color:var(--green); }
 nav { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
 nav a { background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:999px; padding:8px 14px; font-size:14px; cursor:pointer; text-decoration:none; }
 nav a.active { border-color:var(--green); color:var(--green); }
-.hero { text-align:center; padding:28px 18px; }
-.hero h2 { font-size:26px; margin:0 0 6px; }
-.hero h2 span { color:var(--green); }
-.hero p { color:var(--muted); margin:0 0 16px; }
 .planpick { border:1px solid var(--border); border-radius:12px; padding:14px; margin-top:10px; cursor:pointer; }
 .planpick.selected { border-color:var(--green); background:#0a1a0f; }
 .planpick h3 { margin:0; font-size:17px; }
@@ -69,7 +65,6 @@ nav a.active { border-color:var(--green); color:var(--green); }
 #panel.open { display:block; }
 #menuBackdrop { display:none; }
 #bottomNav { display:none; }
-.trial-title-mobile { display:none; }
 @media (max-width:640px) {
   body { padding-bottom:72px; }
   header { position:sticky; top:0; z-index:50; background:var(--bg); padding:8px 0; flex-wrap:nowrap; align-items:center; }
@@ -87,10 +82,6 @@ nav a.active { border-color:var(--green); color:var(--green); }
   #panel.open { transform:none; }
   #menuBackdrop.show { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:35; }
   body[data-page="home"] h2 { font-size:17px; }
-  body[data-page="home"] .hero h2 { font-size:20px; }
-  body[data-page="home"] .hero { display:none !important; }
-  body[data-page="home"] .trial-title-desktop { display:none !important; }
-  body[data-page="home"] .trial-title-mobile { display:inline !important; }
   body[data-page="home"] .btn { padding:10px 14px; font-size:14px; }
   body[data-page="home"] .price { font-size:20px; }
 }
