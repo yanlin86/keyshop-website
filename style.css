@@ -63,6 +63,7 @@ nav a.active { border-color:var(--green); color:var(--green); }
 #panel.open { display:block; }
 #menuBackdrop { display:none; }
 #bottomNav { display:none; }
+.trial-title-mobile { display:none; }
 @media (max-width:640px) {
   body { padding-bottom:72px; }
   header { position:sticky; top:0; z-index:50; background:var(--bg); padding:8px 0; flex-wrap:nowrap; align-items:center; }
@@ -81,6 +82,9 @@ nav a.active { border-color:var(--green); color:var(--green); }
   #menuBackdrop.show { display:block; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:35; }
   body[data-page="home"] h2 { font-size:17px; }
   body[data-page="home"] .hero h2 { font-size:20px; }
+  body[data-page="home"] .hero { display:none; }
+  body[data-page="home"] .trial-title-desktop { display:none; }
+  body[data-page="home"] .trial-title-mobile { display:inline; }
   body[data-page="home"] .btn { padding:10px 14px; font-size:14px; }
   body[data-page="home"] .price { font-size:20px; }
 }
