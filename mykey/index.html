@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Key — KeyShop</title>
 <meta name="description" content="KeyShop: ကျွန်တော့် VPN key တွေ, သက်တမ်းတိုး။">
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../style.css?v=20261029-key-usage">
 </head>
 <body>
 <div class="wrap">
@@ -68,9 +68,11 @@
 </div>
 
 <script>var PAGE_PREFIX = "../";</script>
-<script src="../app.js"></script>
+<script src="../app.js?v=20261029-key-usage"></script>
 <script>
 var renewPlans = [];
+var keyUsages = Object.create(null);
+var usageLoading = false;
 async function loadRenewPlans() {
   try {
     var res = await fetch(API + "/api/plans");
@@ -78,28 +80,64 @@ async function loadRenewPlans() {
     if (res.ok && data.ok) renewPlans = data.plans || [];
   } catch (e) { renewPlans = []; }
 }
+function keyUsageId(k) {
+  if (k.kind === "outline" && k.accessUrl) return "outline:" + k.accessUrl;
+  if (k.username) return String(k.kind || "subscription") + ":" + k.username;
+  return "";
+}
+function formatDataGb(bytes) {
+  var gb = Math.max(0, Number(bytes) || 0) / (1024 * 1024 * 1024);
+  return String(Number(gb.toFixed(gb >= 10 ? 1 : 2)));
+}
+function usageHtml(k) {
+  var usage = keyUsages[keyUsageId(k)];
+  if (!usage || !(Number(usage.totalBytes) > 0)) {
+    return '<div class="key-usage muted small">' + (usageLoading ? "Usage ဆွဲနေတယ်…" : "Usage မရနိုင်ပါ") + "</div>";
+  }
+  var total = Number(usage.totalBytes);
+  var used = Math.max(0, Number(usage.usedBytes) || 0);
+  var percent = Math.max(0, Math.min(100, used / total * 100));
+  return '<div class="key-usage">' +
+    '<div class="key-usage-label"><span>Data Usage</span><b>' + formatDataGb(used) + " / " + formatDataGb(total) + ' GB</b></div>' +
+    '<div class="key-usage-track" role="progressbar" aria-label="Data usage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(percent) + '"><span style="width:' + percent.toFixed(2) + '%"></span></div>' +
+    '</div>';
+}
+function daysLeftText(expiresAt) {
+  if (!expiresAt) return "သက်တမ်း မသိပါ";
+  var expires = new Date(expiresAt).getTime();
+  if (!Number.isFinite(expires)) return "သက်တမ်း မသိပါ";
+  var left = expires - Date.now();
+  if (left <= 0) return "Expired";
+  var days = Math.ceil(left / 86400000);
+  return days + (days === 1 ? " day left" : " days left");
+}
+function copyKeyButton(btn) {
+  copyText(btn, btn.getAttribute("data-copy") || "");
+}
+function renewKeyButton(btn) {
+  showRenewForm(btn, btn.getAttribute("data-kind") || "", btn.getAttribute("data-ident") || "");
+}
 function keyHtml(k) {
   var title = esc(k.label || k.planKey || k.kind || "Key");
   var srv = esc(k.serverName || "");
-  var exp = k.expiresAt ? fmtDate(k.expiresAt) : "";
   var html = '<div class="keyitem"><b>' + title + "</b>" + (srv ? " · " + srv : "") +
-    (exp ? '<div class="muted small">သက်တမ်း ' + exp + " အထိ</div>" : "");
+    '<div class="muted small key-expiry">' + daysLeftText(k.expiresAt) + "</div>" + usageHtml(k);
   if (k.kind === "outline" && k.accessUrl) {
-    html += '<div class="btnrow"><button class="btn secondary small" style="padding:6px 12px" onclick="copyText(this, ' + JSON.stringify(k.accessUrl) + ')">Copy</button>';
+    html += '<div class="btnrow"><button class="btn secondary small" style="padding:6px 12px" data-copy="' + esc(k.accessUrl) + '" onclick="copyKeyButton(this)">Copy</button>';
     if (k.label === "Trial") {
       html += '<span class="muted small" style="align-self:center">Trial key ကို သက်တမ်းတိုးလို့မရပါ — plan ဝယ်ပါ။</span>';
     } else {
-      html += '<button class="btn secondary small" style="padding:6px 12px" onclick="showRenewForm(this, \'outline\', ' + JSON.stringify(k.accessUrl) + ')">သက်တမ်းတိုးမယ်</button>';
+      html += '<button class="btn secondary small" style="padding:6px 12px" data-kind="outline" data-ident="' + esc(k.accessUrl) + '" onclick="renewKeyButton(this)">သက်တမ်းတိုးမယ်</button>';
     }
     html += '</div><div class="renewArea"></div>';
   } else if (k.kind === "subscription" && k.username) {
     html += '<div class="muted small">Username: ' + esc(k.username) + "</div>";
     html += '<div class="btnrow">';
-    if (k.link) html += '<button class="btn secondary small" style="padding:6px 12px" onclick="copyText(this, ' + JSON.stringify(k.link) + ')">Link Copy</button>';
+    if (k.link) html += '<button class="btn secondary small" style="padding:6px 12px" data-copy="' + esc(k.link) + '" onclick="copyKeyButton(this)">Link Copy</button>';
     if (k.label === "Trial") {
       html += '<span class="muted small" style="align-self:center">Trial key ကို သက်တမ်းတိုးလို့မရပါ — plan ဝယ်ပါ။</span>';
     } else {
-      html += '<button class="btn secondary small" style="padding:6px 12px" onclick="showRenewForm(this, \'subscription\', ' + JSON.stringify(k.username) + ')">သက်တမ်းတိုးမယ်</button>';
+      html += '<button class="btn secondary small" style="padding:6px 12px" data-kind="subscription" data-ident="' + esc(k.username) + '" onclick="renewKeyButton(this)">သက်တမ်းတိုးမယ်</button>';
     }
     html += '</div><div class="renewArea"></div>';
   } else {
@@ -166,8 +204,26 @@ window.onMeLoaded = function (me) {
     document.getElementById("keysList").innerHTML = '<p class="muted">Key တွေ မရှိသေးပါ — Create Key page မှာ ဖန်တီးလို့ရတယ်။</p>';
   } else {
     document.getElementById("keysList").innerHTML = keys.map(keyHtml).join("");
+    keyUsages = Object.create(null);
+    usageLoading = true;
+    loadKeyUsages(keys);
   }
 };
+async function loadKeyUsages(keys) {
+  try {
+    var res = await fetch(API + "/api/key-usage", { headers: { "Authorization": "Bearer " + session.token } });
+    var data = await res.json();
+    if (res.ok && data.ok) {
+      keyUsages = Object.create(null);
+      (data.keys || []).forEach(function (usage) {
+        var id = keyUsageId(usage);
+        if (id) keyUsages[id] = usage;
+      });
+    }
+  } catch (e) {}
+  usageLoading = false;
+  document.getElementById("keysList").innerHTML = keys.map(keyHtml).join("");
+}
 window.onLoggedOut = function () {
   document.getElementById("loginPrompt").style.display = "block";
   document.getElementById("keysContent").style.display = "none";

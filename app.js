@@ -152,14 +152,37 @@ function goCreate(planKey) {
   location.href = P + "create_vpn_key/" + (planKey ? "?plan=" + encodeURIComponent(planKey) : "");
 }
 function copyText(btn, text) {
-  var done = function () { if (btn) btn.textContent = "Copy ပြီးပြီ!"; };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(done);
-  } else {
+  var value = String(text == null ? "" : text);
+  var original = btn ? btn.textContent : "";
+  var showResult = function (success) {
+    if (!btn) return;
+    btn.textContent = success ? "Copy ပြီးပြီ!" : "Copy မအောင်မြင်ပါ";
+    window.setTimeout(function () {
+      if (btn.isConnected) btn.textContent = original;
+    }, 1800);
+  };
+  var fallback = function () {
     var ta = document.createElement("textarea");
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); } catch (e) {}
-    document.body.removeChild(ta); done();
+    ta.value = value;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    ta.style.top = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, value.length);
+    var copied = false;
+    try { copied = document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    showResult(copied);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(value).then(function () {
+      showResult(true);
+    }).catch(fallback);
+  } else {
+    fallback();
   }
 }
 // Bottom nav (phone only; hidden on desktop via CSS) + page marker

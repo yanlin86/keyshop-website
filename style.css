@@ -42,6 +42,12 @@ footer a { color:var(--green); }
 #codeInput { font-size:26px; letter-spacing:10px; text-align:center; font-weight:800; }
 .keyitem { border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:10px; }
 .keyitem b { color:var(--green); }
+.key-expiry { margin-top:3px; }
+.key-usage { margin-top:12px; }
+.key-usage-label { display:flex; justify-content:space-between; gap:10px; margin-bottom:6px; font-size:13px; }
+.key-usage-label b { color:var(--text); font-weight:600; }
+.key-usage-track { height:10px; overflow:hidden; border-radius:999px; background:#1a241c; border:1px solid var(--border); }
+.key-usage-track span { display:block; height:100%; min-width:0; border-radius:inherit; background:var(--green); transition:width .3s ease; }
 .txrow { display:flex; justify-content:space-between; gap:10px; border-bottom:1px solid var(--border); padding:8px 0; font-size:14px; }
 .txrow:last-child { border-bottom:0; }
 .plus { color:var(--green); }
