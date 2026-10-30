@@ -56,11 +56,12 @@
       <div class="admin-panel-heading">
         <div>
           <h2>🛠 Admin Dashboard</h2>
-          <p class="muted">Deposit account တွေ၊ wallet နဲ့ လက်ရှိဝယ်ထားတဲ့ paid key တွေ</p>
+          <p class="muted">User တွေ၊ deposit account တွေ၊ wallet နဲ့ paid key တွေ — user တွေကို စာပို့နိုင်တယ်</p>
         </div>
-        <button class="btn secondary" type="button" id="adminRefreshBtn" onclick="loadAdminDashboard(adminPage)">🔄 Refresh</button>
+        <button class="btn secondary" type="button" id="adminRefreshBtn" onclick="loadAdminDashboard(adminPage); loadAdminUsers(adminUserPage);">🔄 Refresh</button>
       </div>
       <div class="admin-stats">
+        <div class="admin-stat"><span>Total Users</span><b id="adminTotalUsers">—</b></div>
         <div class="admin-stat"><span>Depositor Accounts</span><b id="adminDepositorCount">—</b></div>
         <div class="admin-stat"><span>Total Deposited</span><b id="adminTotalDeposited">—</b></div>
         <div class="admin-stat"><span>Pending Requests</span><b id="adminPendingCount">—</b></div>
@@ -71,6 +72,17 @@
       <h3 class="admin-section-title">🧾 Recent Deposit Requests</h3>
       <div id="adminTopupList"><p class="muted">ဆွဲနေတယ်…</p></div>
       <p class="muted small admin-note">ပြေစာစစ်ဆေးပြီး Approve/Reject လုပ်ရန် Telegram bot admin chat ကို အသုံးပြုပါ။</p>
+      <h3 class="admin-section-title">👥 Bot Users</h3>
+      <div style="margin-bottom:12px">
+        <label for="adminBroadcastText">📣 Broadcast — User အားလုံးကို စာပို့မယ်</label>
+        <textarea id="adminBroadcastText" rows="3" maxlength="4096" placeholder="အားလုံးကို ပို့မယ့် စာ…"></textarea>
+        <div class="btnrow" style="margin-top:8px">
+          <button class="btn" type="button" id="adminBroadcastBtn" onclick="sendAdminBroadcast()">အားလုံးကို ပို့မယ်</button>
+        </div>
+        <div id="adminBroadcastMsg" class="muted small" style="margin-top:6px"></div>
+      </div>
+      <div id="adminUserList"><p class="muted">ဆွဲနေတယ်…</p></div>
+      <div id="adminUserControls" class="btnrow admin-page-controls" style="display:none"></div>
     </div>
 
     <div class="card">
@@ -130,13 +142,19 @@ async function loadAdminDashboard(page) {
     var headers = { "Authorization": "Bearer " + session.token };
     var results = await Promise.all([
       fetch(API + "/api/admin/depositors?page=" + encodeURIComponent(page || 0), { headers: headers }),
-      fetch(API + "/api/admin/topups", { headers: headers })
+      fetch(API + "/api/admin/topups", { headers: headers }),
+      fetch(API + "/api/admin/stats", { headers: headers })
     ]);
     var data = await results[0].json();
     var topups = await results[1].json();
-    if (results[0].status === 401 || results[1].status === 401) { logout(); showLogin(); return; }
+    var stats = await results[2].json().catch(function () { return {}; });
+    if (results[0].status === 401 || results[1].status === 401 || results[2].status === 401) { logout(); showLogin(); return; }
     if (results[0].status === 403 || !data.ok) throw new Error("Admin account လိုအပ်ပါတယ်။");
     if (!topups.ok) throw new Error("Deposit request တွေ ဆွဲမရပါ။");
+    if (stats.ok) {
+      adminTotalUsers = Number(stats.totalUsers || 0);
+      document.getElementById("adminTotalUsers").textContent = adminTotalUsers.toLocaleString("en-US");
+    }
     adminPage = data.page || 0;
     document.getElementById("adminDepositorCount").textContent = Number(data.totalAccounts || 0).toLocaleString("en-US");
     document.getElementById("adminTotalDeposited").textContent = fmtKyat(Number(data.totalDepositedKyat || 0));
@@ -165,6 +183,93 @@ async function loadAdminDashboard(page) {
     document.getElementById("adminDepositorList").innerHTML = '<p class="err">' + esc(e.message || "Admin data ဆွဲမရပါ။") + "</p>";
   } finally {
     if (button) button.disabled = false;
+  }
+}
+var adminUserPage = 0;
+var adminTotalUsers = 0;
+async function loadAdminUsers(page) {
+  var list = document.getElementById("adminUserList");
+  if (!list || !session || !session.token) return;
+  list.innerHTML = '<p class="muted">ဆွဲနေတယ်…</p>';
+  try {
+    var headers = { "Authorization": "Bearer " + session.token };
+    var res = await fetch(API + "/api/admin/users?page=" + encodeURIComponent(page || 0), { headers: headers });
+    var data = await res.json();
+    if (res.status === 401) { logout(); showLogin(); return; }
+    if (res.status === 403 || !data.ok) throw new Error("Admin account လိုအပ်ပါတယ်။");
+    adminUserPage = data.page || 0;
+    var users = data.users || [];
+    list.innerHTML = users.length ? users.map(function (user) {
+      var keys = user.keys || [];
+      var keyHtml = keys.length ? '<div class="admin-key-list">' + keys.map(function (key) {
+        return '<div class="admin-key"><b>' + esc(key.label || "Paid plan") + '</b><span>' + esc(key.name || "Key") + (key.serverName ? " · " + esc(key.serverName) : "") + (key.expiresAt ? " · " + esc(String(key.expiresAt).slice(0, 10)) + " ထိ" : "") + "</span></div>";
+      }).join("") + "</div>" : '<p class="muted small">လက်ရှိ paid key မရှိပါ။</p>';
+      return '<details class="admin-depositor"><summary><span><b>ID ' + esc(user.uid) + '</b><small>' + (user.username ? "@" + esc(user.username) + " · " : "") + "Wallet " + fmtKyat(Number(user.walletKyat || 0)) + '</small></span><span class="admin-deposit-total">' + fmtKyat(Number(user.totalDepositedKyat || 0)) + '<small>' + keys.length + ' paid key</small></span></summary>' + keyHtml +
+        '<div style="margin-top:10px"><textarea id="adminMsgText-' + esc(user.uid) + '" rows="2" maxlength="4096" placeholder="ဒီ user ကို ပို့မယ့် စာ…"></textarea>' +
+        '<div class="btnrow" style="margin-top:6px"><button class="btn secondary" type="button" onclick="sendAdminMessage(\'' + esc(user.uid) + '\', this)">✉️ စာပို့မယ်</button></div>' +
+        '<div class="muted small" id="adminMsgResult-' + esc(user.uid) + '"></div></div></details>';
+    }).join("") : '<p class="muted">Bot user မရှိသေးပါ။</p>';
+    var pageCount = Math.max(1, Math.ceil(Number(data.totalUsers || 0) / Number(data.pageSize || 20)));
+    var controls = document.getElementById("adminUserControls");
+    controls.innerHTML = "";
+    controls.style.display = pageCount > 1 ? "flex" : "none";
+    if (adminUserPage > 0) controls.innerHTML += '<button class="btn secondary" type="button" onclick="loadAdminUsers(' + (adminUserPage - 1) + ')">⬅️ အရင်</button>';
+    controls.innerHTML += '<span class="muted small">စာမျက်နှာ ' + (adminUserPage + 1) + " / " + pageCount + "</span>";
+    if (adminUserPage + 1 < pageCount) controls.innerHTML += '<button class="btn secondary" type="button" onclick="loadAdminUsers(' + (adminUserPage + 1) + ')">နောက် ➡️</button>';
+  } catch (e) {
+    list.innerHTML = '<p class="err">' + esc(e.message || "User တွေ ဆွဲမရပါ။") + "</p>";
+  }
+}
+async function sendAdminMessage(uid, btn) {
+  var box = document.getElementById("adminMsgText-" + uid);
+  var result = document.getElementById("adminMsgResult-" + uid);
+  if (!box || !session || !session.token) return;
+  var text = (box.value || "").trim();
+  if (!text) { result.innerHTML = '<span class="err">စာရိုက်ပါ။</span>'; return; }
+  btn.disabled = true;
+  result.textContent = "ပို့နေတယ်…";
+  try {
+    var res = await fetch(API + "/api/admin/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ uid: uid, text: text })
+    });
+    var data = await res.json();
+    if (res.status === 401) { logout(); showLogin(); return; }
+    if (!res.ok || !data.ok) throw new Error(data.error || "ပို့မရပါ");
+    box.value = "";
+    result.innerHTML = '<span class="ok">ပို့ပြီးပါပြီ။</span>';
+  } catch (e) {
+    result.innerHTML = '<span class="err">' + esc(e.message || "ပို့မရပါ") + "</span>";
+  } finally {
+    btn.disabled = false;
+  }
+}
+async function sendAdminBroadcast() {
+  var box = document.getElementById("adminBroadcastText");
+  var result = document.getElementById("adminBroadcastMsg");
+  var btn = document.getElementById("adminBroadcastBtn");
+  if (!box || !session || !session.token) return;
+  var text = (box.value || "").trim();
+  if (!text) { result.innerHTML = '<span class="err">စာရိုက်ပါ။</span>'; return; }
+  if (!confirm("User " + adminTotalUsers.toLocaleString("en-US") + " ယောက်လုံးကို ဒီစာပို့မှာလား?")) return;
+  btn.disabled = true;
+  result.textContent = "ပို့နေတယ်…";
+  try {
+    var res = await fetch(API + "/api/admin/broadcast", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + session.token },
+      body: JSON.stringify({ text: text })
+    });
+    var data = await res.json();
+    if (res.status === 401) { logout(); showLogin(); return; }
+    if (!res.ok || !data.ok) throw new Error(data.error || "ပို့မရပါ");
+    box.value = "";
+    result.innerHTML = '<span class="ok">ပို့ပြီးပါပြီ — ရောက် ' + Number(data.success || 0).toLocaleString("en-US") + ", မရောက် " + Number(data.failed || 0).toLocaleString("en-US") + " (စုစုပေါင်း " + Number(data.total || 0).toLocaleString("en-US") + ")။</span>";
+  } catch (e) {
+    result.innerHTML = '<span class="err">' + esc(e.message || "ပို့မရပါ") + "</span>";
+  } finally {
+    btn.disabled = false;
   }
 }
 async function loadTopupMethods() {
@@ -240,6 +345,7 @@ window.onMeLoaded = function (me) {
   if (me.user && me.user.isAdmin) {
     document.getElementById("adminPanelCard").style.display = "block";
     loadAdminDashboard(0);
+    loadAdminUsers(0);
   } else {
     document.getElementById("adminPanelCard").style.display = "none";
   }
