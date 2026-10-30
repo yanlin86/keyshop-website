@@ -55,15 +55,10 @@
     <div class="card">
       <h2>✨ Key ဖန်တီးမယ်</h2>
       <p id="balanceLine" class="muted">လက်ကျန် ဆွဲနေတယ်…</p>
-      <h2 style="margin-top:16px">Key အမျိုးအစား ရွေးပါ</h2>
-      <div id="typeOutlinePick" class="planpick selected" onclick="selectType('outline')"><h3>Outline Key</h3><div class="meta">ss:// key link — Outline app နဲ့ သုံးမယ်</div></div>
-      <div id="typeMarzbanPick" class="planpick" onclick="selectType('marzban')"><h3>Marzban (Subscription)</h3><div class="meta">Subscription link — Hiddify / Outline / Streisand နဲ့ သုံးမယ်</div></div>
+      <h2 style="margin-top:16px">Server ရွေးပါ</h2>
+      <div id="serverPicks"><p class="muted">Server တွေ ဆွဲနေတယ်…</p></div>
       <h2 style="margin-top:16px">Plan ရွေးပါ</h2>
       <div id="planPicks"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
-      <div style="margin-top:14px">
-        <label for="createServer">Server ရွေးပါ</label>
-        <select id="createServer"></select>
-      </div>
       <div style="margin-top:14px">
         <label for="keyName" id="keyNameLabel">Key နာမည် (ဥပမာ: My iPhone)</label>
         <input type="text" id="keyName" maxlength="64" placeholder="My iPhone">
@@ -88,32 +83,39 @@
 var selectedPlan = null;
 var planList = [];
 var keyType = "outline";
-var outlineServers = [];
-var marzbanServers = [];
+var serverList = [];
+var selectedServer = null;
+function selectServer(id, el) {
+  var s = null;
+  serverList.forEach(function (item) { if (item.id === id) s = item; });
+  if (!s) return;
+  selectedServer = s;
+  keyType = s.kind;
+  document.querySelectorAll("#serverPicks .serverpick").forEach(function (d) { d.classList.remove("selected"); });
+  if (el) el.classList.add("selected");
+  document.getElementById("keyNameLabel").textContent = keyType === "marzban" ? "VPN Username (ဥပမာ: myuser)" : "Key နာမည် (ဥပမာ: My iPhone)";
+  document.getElementById("keyName").placeholder = keyType === "marzban" ? "myuser" : "My iPhone";
+  document.getElementById("keyNameHint").style.display = keyType === "marzban" ? "block" : "none";
+  document.getElementById("createBtn").textContent = keyType === "marzban" ? "Subscription ဖန်တီးမယ်" : "Key ဖန်တီးမယ်";
+}
 function fillServers() {
-  var sel = document.getElementById("createServer");
-  var list = keyType === "marzban" ? marzbanServers : outlineServers;
-  sel.innerHTML = list.map(function (s) { return '<option value="' + s.id + '">' + esc(s.name) + "</option>"; }).join("");
-  document.getElementById("createBtn").disabled = !list.length;
-  if (!list.length) {
+  var box = document.getElementById("serverPicks");
+  box.innerHTML = serverList.map(function (s) {
+    return '<div class="planpick serverpick" onclick="selectServer(\'' + esc(s.id) + '\', this)"><h3>' + esc(s.name) + '</h3>' +
+      '<div class="meta">' + (s.kind === "marzban" ? "Subscription link — Hiddify / Outline / Streisand နဲ့ သုံးမယ်" : "ss:// key link — Outline app နဲ့ သုံးမယ်") + "</div></div>";
+  }).join("");
+  document.getElementById("createBtn").disabled = !serverList.length;
+  if (!serverList.length) {
+    box.innerHTML = '<p class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</p>';
     document.getElementById("createMsg").innerHTML = '<span class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</span>';
   } else {
     document.getElementById("createMsg").textContent = "";
+    selectServer(serverList[0].id, box.querySelector(".serverpick"));
   }
-}
-function selectType(t) {
-  keyType = t;
-  document.getElementById("typeOutlinePick").classList.toggle("selected", t === "outline");
-  document.getElementById("typeMarzbanPick").classList.toggle("selected", t === "marzban");
-  document.getElementById("keyNameLabel").textContent = t === "marzban" ? "VPN Username (ဥပမာ: myuser)" : "Key နာမည် (ဥပမာ: My iPhone)";
-  document.getElementById("keyName").placeholder = t === "marzban" ? "myuser" : "My iPhone";
-  document.getElementById("keyNameHint").style.display = t === "marzban" ? "block" : "none";
-  document.getElementById("createBtn").textContent = t === "marzban" ? "Subscription ဖန်တီးမယ်" : "Key ဖန်တီးမယ်";
-  fillServers();
 }
 function pickPlan(key, el) {
   selectedPlan = key;
-  document.querySelectorAll(".planpick").forEach(function (d) { d.classList.remove("selected"); });
+  document.querySelectorAll("#planPicks .planpick").forEach(function (d) { d.classList.remove("selected"); });
   el.classList.add("selected");
 }
 async function loadCreatePlans() {
@@ -130,15 +132,13 @@ async function loadCreatePlans() {
         '<div class="price" style="font-size:20px">' + fmtKyat(p.costKyat) + '</div>' +
         '<div class="meta">' + p.limitGB + " GB · " + p.days + " ရက် · " + fmtKyat(p.costKyat) + "</div></div>";
     }).join("");
-    outlineServers = data.servers || [];
-    marzbanServers = data.marzbanServers || [];
-    if (!marzbanServers.length) {
-      document.getElementById("typeMarzbanPick").style.display = "none";
-    }
+    serverList = [];
+    (data.servers || []).forEach(function (s) { serverList.push({ id: s.id, name: s.name, kind: "outline" }); });
+    (data.marzbanServers || []).forEach(function (s) { serverList.push({ id: s.id, name: "Sub Link " + s.name, kind: "marzban" }); });
     fillServers();
     var want = pre && planList.some(function (p) { return p.key === pre; }) ? pre : (planList[0] ? planList[0].key : null);
     if (want) {
-      var els = document.querySelectorAll(".planpick");
+      var els = document.querySelectorAll("#planPicks .planpick");
       planList.forEach(function (p, i) { if (p.key === want && els[i]) pickPlan(want, els[i]); });
     }
   } catch (e) {
@@ -160,7 +160,8 @@ async function submitCreate() {
   var out = document.getElementById("createResult");
   if (!session) { showLogin(); return; }
   var name = (document.getElementById("keyName").value || "").trim();
-  var server = document.getElementById("createServer").value;
+  var server = selectedServer ? selectedServer.id : "";
+  if (!server) { msg.innerHTML = '<span class="err">Server တစ်ခုကို ရွေးပါ။</span>'; return; }
   if (!selectedPlan) { msg.innerHTML = '<span class="err">Plan တစ်ခုကို ရွေးပါ။</span>'; return; }
   if (!name || name.length > 64 || /[\u0000-\u001f\u007f]/.test(name)) {
     msg.innerHTML = '<span class="err">' + (keyType === "marzban" ? "VPN Username မှန်အောင် ရိုက်ပါ။" : "Key နာမည် မှန်အောင် ရိုက်ပါ (၁–၆၄ လုံး)။") + "</span>";
