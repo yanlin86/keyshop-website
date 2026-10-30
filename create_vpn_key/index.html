@@ -55,8 +55,10 @@
     <div class="card">
       <h2>✨ Key ဖန်တီးမယ်</h2>
       <p id="balanceLine" class="muted">လက်ကျန် ဆွဲနေတယ်…</p>
-      <h2 style="margin-top:16px">Server ရွေးပါ</h2>
-      <div id="serverPicks"><p class="muted">Server တွေ ဆွဲနေတယ်…</p></div>
+      <div style="margin-top:14px">
+        <label for="createServer">Server ရွေးပါ</label>
+        <select id="createServer" onchange="selectServer(this.value)"></select>
+      </div>
       <h2 style="margin-top:16px">Plan ရွေးပါ</h2>
       <div id="planPicks"><p class="muted">Plan တွေ ဆွဲနေတယ်…</p></div>
       <div style="margin-top:14px">
@@ -85,32 +87,27 @@ var planList = [];
 var keyType = "outline";
 var serverList = [];
 var selectedServer = null;
-function selectServer(id, el) {
+function selectServer(id) {
   var s = null;
   serverList.forEach(function (item) { if (item.id === id) s = item; });
   if (!s) return;
   selectedServer = s;
   keyType = s.kind;
-  document.querySelectorAll("#serverPicks .serverpick").forEach(function (d) { d.classList.remove("selected"); });
-  if (el) el.classList.add("selected");
   document.getElementById("keyNameLabel").textContent = keyType === "marzban" ? "VPN Username (ဥပမာ: myuser)" : "Key နာမည် (ဥပမာ: My iPhone)";
   document.getElementById("keyName").placeholder = keyType === "marzban" ? "myuser" : "My iPhone";
   document.getElementById("keyNameHint").style.display = keyType === "marzban" ? "block" : "none";
   document.getElementById("createBtn").textContent = keyType === "marzban" ? "Subscription ဖန်တီးမယ်" : "Key ဖန်တီးမယ်";
 }
 function fillServers() {
-  var box = document.getElementById("serverPicks");
-  box.innerHTML = serverList.map(function (s) {
-    return '<div class="planpick serverpick" onclick="selectServer(\'' + esc(s.id) + '\', this)"><h3>' + esc(s.name) + '</h3>' +
-      '<div class="meta">' + (s.kind === "marzban" ? "Subscription link — Hiddify / Outline / Streisand နဲ့ သုံးမယ်" : "ss:// key link — Outline app နဲ့ သုံးမယ်") + "</div></div>";
-  }).join("");
+  var sel = document.getElementById("createServer");
+  sel.innerHTML = serverList.map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + "</option>"; }).join("");
   document.getElementById("createBtn").disabled = !serverList.length;
   if (!serverList.length) {
-    box.innerHTML = '<p class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</p>';
     document.getElementById("createMsg").innerHTML = '<span class="err">Server မရှိသေးပါ — နောက်မှ ပြန်လာပါ။</span>';
   } else {
     document.getElementById("createMsg").textContent = "";
-    selectServer(serverList[0].id, box.querySelector(".serverpick"));
+    sel.value = serverList[0].id;
+    selectServer(serverList[0].id);
   }
 }
 function pickPlan(key, el) {
